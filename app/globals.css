@@ -3,3 +3,6 @@ html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; background:
 main, .canvas-host { position: fixed; inset: 0; }
 canvas { display: block; width: 100%; height: 100%; }
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+.translations { position: fixed; left: 0; right: 0; bottom: 24px; margin: 0; padding: 0 16px; list-style: none; display: flex; flex-wrap: wrap; justify-content: center; gap: 8px 28px; font: 14px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace; color: #c9f594; pointer-events: none; }
+.translations li { display: flex; gap: 8px; }
+.translations .language { color: #577d47; text-transform: lowercase; }
