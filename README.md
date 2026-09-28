@@ -1,6 +1,6 @@
 # Hello world — ASCII in 3D
 
-A Next.js App Router page with extruded Three.js text and a GPU ASCII postprocessing shader. The scene is rendered to a low-resolution texture, then each sampled brightness value selects a character from a generated glyph atlas.
+A Next.js App Router page with extruded Three.js text and a GPU ASCII postprocessing shader. Each line is drawn with the system font into a texture and stacked in layers to give it depth, so any script renders, Japanese included. The scene is rendered to a low-resolution texture, then each sampled brightness value selects a character from a generated glyph atlas.
 
 ## Run locally
 
@@ -13,7 +13,7 @@ Open http://localhost:3000. The page shows only the ASCII 3D text on a plain dar
 
 ## Supabase
 
-The page reads translations of "hello world" from a Supabase `strings` table and lists them under the scene. Add your project's credentials to `.env.local` (Project Settings → API Keys in the Supabase dashboard):
+The page reads translations of "hello world" from a Supabase `strings` table and draws each one as a line of the ASCII scene. Without data, the scene falls back to "hello world". Add your project's credentials to `.env.local` (Project Settings → API Keys in the Supabase dashboard):
 
 ```sh
 NEXT_PUBLIC_SUPABASE_URL=https://<project-ref>.supabase.co
@@ -29,4 +29,4 @@ npm run build
 npm start
 ```
 
-Vercel uses the Next.js framework setting in `vercel.json`. The font is bundled locally with Three.js; the page makes no third-party asset requests.
+Vercel uses the Next.js framework setting in `vercel.json`. Text uses the visitor's system fonts; the page makes no third-party asset requests.

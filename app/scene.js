@@ -2,11 +2,36 @@
 
 import { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
-import { FontLoader } from 'three/addons/loaders/FontLoader.js';
-import { TextGeometry } from 'three/addons/geometries/TextGeometry.js';
-import fontData from './fonts/helvetiker_bold.typeface.json';
 
 const characters = ' .,:;i1tfLCG08@';
+const fontStack = '"Helvetica Neue", Helvetica, Arial, "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic", Meiryo, sans-serif';
+const lineHeight = 1.25;
+const lineGap = 0.12;
+const depth = 0.5;
+const layers = 16;
+
+// Draws one line of text into a texture; the front face gets a vertical gradient so it shades like a lit surface.
+function createLineTexture(text) {
+  const size = 160;
+  const padding = 24;
+  const canvas = document.createElement('canvas');
+  const context = canvas.getContext('2d');
+  const font = `bold ${size}px ${fontStack}`;
+  context.font = font;
+  canvas.width = Math.ceil(context.measureText(text).width) + padding * 2;
+  canvas.height = Math.ceil(size * 1.15);
+  context.font = font;
+  context.textAlign = 'center';
+  context.textBaseline = 'middle';
+  const gradient = context.createLinearGradient(0, 0, 0, canvas.height);
+  gradient.addColorStop(0.2, '#ffffff');
+  gradient.addColorStop(0.8, '#c4c4c4');
+  context.fillStyle = gradient;
+  context.fillText(text, canvas.width / 2, canvas.height / 2);
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  return { texture, aspect: canvas.width / canvas.height };
+}
 
 // Each atlas tile contains one character, from sparse to dense.
 function createAtlas() {
@@ -30,7 +55,7 @@ function createAtlas() {
   return texture;
 }
 
-export default function AsciiScene() {
+export default function AsciiScene({ lines, children }) {
   const mount = useRef(null);
   const [status, setStatus] = useState('loading');
 
@@ -53,28 +78,23 @@ export default function AsciiScene() {
     const camera = new THREE.PerspectiveCamera(36, 1, 0.1, 100);
     const group = new THREE.Group();
     scene.add(group);
-    const font = new FontLoader().parse(fontData);
-    const material = new THREE.MeshPhongMaterial({ color: 0xffffff, shininess: 40 });
-    const geometries = [];
-    ['hello', 'world'].forEach((word, index) => {
-      const geometry = new TextGeometry(word, {
-        font, size: 2.1, depth: 0.65, curveSegments: 10,
-        bevelEnabled: true, bevelThickness: 0.07, bevelSize: 0.045, bevelSegments: 3,
-      });
-      geometry.center();
-      geometries.push(geometry);
-      const text = new THREE.Mesh(geometry, material);
-      text.position.y = index === 0 ? 1.22 : -1.22;
-      group.add(text);
+    // Each line is a stack of textured planes: a bright front and darker copies behind it that read as extruded sides.
+    const disposables = [];
+    const step = lineHeight + lineGap;
+    lines.forEach((line, index) => {
+      const { texture, aspect } = createLineTexture(line);
+      const geometry = new THREE.PlaneGeometry(lineHeight * aspect, lineHeight);
+      const front = new THREE.MeshBasicMaterial({ map: texture, alphaTest: 0.5 });
+      const side = new THREE.MeshBasicMaterial({ map: texture, alphaTest: 0.5, color: 0x242424 });
+      disposables.push(texture, geometry, front, side);
+      const y = ((lines.length - 1) / 2 - index) * step;
+      for (let layer = 0; layer < layers; layer += 1) {
+        const plane = new THREE.Mesh(geometry, layer === 0 ? front : side);
+        plane.position.set(0, y, -layer * depth / (layers - 1));
+        group.add(plane);
+      }
     });
-
-    scene.add(new THREE.AmbientLight(0xffffff, 0.32));
-    const key = new THREE.DirectionalLight(0xffffff, 2.8);
-    key.position.set(-3, 5, 7);
-    scene.add(key);
-    const rim = new THREE.DirectionalLight(0xffffff, 1.1);
-    rim.position.set(4, -1, -2);
-    scene.add(rim);
+    const bounds = new THREE.Box3().setFromObject(group).getSize(new THREE.Vector3());
 
     const target = new THREE.WebGLRenderTarget(1, 1, {
       minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter,
@@ -123,8 +143,8 @@ export default function AsciiScene() {
     let width = 1;
     let height = 1;
     const updateGrid = () => {
-      const columns = Math.max(1, Math.floor(width / 8));
-      const rows = Math.max(1, Math.floor(height / (11.2)));
+      const columns = Math.max(1, Math.floor(width / 7));
+      const rows = Math.max(1, Math.floor(height / 9.8));
       target.setSize(columns, rows);
       ascii.uniforms.grid.value.set(columns, rows);
     };
@@ -133,8 +153,9 @@ export default function AsciiScene() {
       height = Math.max(host.clientHeight, 1);
       renderer.setSize(width, height);
       camera.aspect = width / height;
-      // Fit both lines with room for the extruded sides and pointer movement.
-      camera.position.z = Math.max(10.6, 12.6 / camera.aspect);
+      // Fit every line with room for the extruded sides and pointer movement.
+      const tangent = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
+      camera.position.z = 1.08 * Math.max(bounds.y / 2 / tangent, bounds.x / 2 / (tangent * camera.aspect)) + depth;
       camera.updateProjectionMatrix();
       updateGrid();
     };
@@ -184,8 +205,7 @@ export default function AsciiScene() {
       host.removeEventListener('pointermove', move);
       host.removeEventListener('pointerleave', leave);
       renderer.domElement.removeEventListener('webglcontextlost', contextLost);
-      geometries.forEach((geometry) => geometry.dispose());
-      material.dispose();
+      disposables.forEach((item) => item.dispose());
       quadGeometry.dispose();
       ascii.dispose();
       atlas.dispose();
@@ -193,11 +213,12 @@ export default function AsciiScene() {
       renderer.dispose();
       renderer.domElement.remove();
     };
-  }, []);
+  }, [lines]);
 
   return (
     <main aria-label="Interactive ASCII rendering of 3D text saying hello world">
       <h1 className="sr-only">hello world</h1>
+      {children}
       <div className="canvas-host" ref={mount} />
       {status === 'error' && <p className="sr-only" role="status">WebGL is unavailable. Enable hardware acceleration and reload to see the 3D text.</p>}
     </main>
