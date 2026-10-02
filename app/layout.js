@@ -1,8 +1,8 @@
 import './globals.css';
 
 export const metadata = {
-  title: 'Hello, world — an ASCII experiment',
-  description: 'Three-dimensional type, rendered in characters. An interactive Three.js experiment.',
+  title: 'People — a profile board',
+  description: 'A board of member profiles, with Google sign-in and photos stored in Supabase.',
 };
 
 export default function RootLayout({ children }) {

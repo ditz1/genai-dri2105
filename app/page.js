@@ -1,31 +1,44 @@
-import AsciiScene from './scene';
-import { supabase } from '../lib/supabase';
+import Link from 'next/link';
+import { getUserAndProfile } from '../lib/supabase/server';
+import Board from './board';
+import { boardSize, placeholderProfiles } from './placeholders';
 
-// Read from Supabase on every request so table edits show up without a rebuild.
-export const dynamic = 'force-dynamic';
+const maxProfiles = 120;
 
-async function getStrings() {
+// Members who finished onboarding, newest first.
+async function getProfiles(supabase) {
   if (!supabase) return [];
-  const { data, error } = await supabase.from('strings').select('id, language, locale, text').order('id');
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('id, first_name, last_name, avatar_path, created_at')
+    .neq('first_name', '')
+    .neq('last_name', '')
+    .order('created_at', { ascending: false })
+    .limit(maxProfiles);
   if (error) {
-    console.error('Failed to load strings from Supabase:', error.message);
+    console.error('Failed to load profiles from Supabase:', error.message);
     return [];
   }
-  return data;
+  return data.map((profile) => ({
+    ...profile,
+    joined: new Date(profile.created_at).toLocaleDateString('en-US', { dateStyle: 'long' }),
+    avatarUrl: profile.avatar_path
+      ? supabase.storage.from('avatars').getPublicUrl(profile.avatar_path).data.publicUrl
+      : null,
+  }));
 }
 
 export default async function Home() {
-  const strings = await getStrings();
-  const lines = strings.length > 0 ? strings.map(({ text }) => text) : ['hello', 'world'];
+  const { supabase, user } = await getUserAndProfile();
+  const profiles = await getProfiles(supabase);
+  const tiles = [...profiles, ...placeholderProfiles.slice(0, Math.max(0, boardSize - profiles.length))];
   return (
-    <AsciiScene lines={lines}>
-      {strings.length > 0 && (
-        <ul className="sr-only" aria-label="hello world in other languages">
-          {strings.map(({ id, language, locale, text }) => (
-            <li key={id} lang={locale}>{text} ({language})</li>
-          ))}
-        </ul>
-      )}
-    </AsciiScene>
+    <main className="board">
+      <header className="board-header">
+        <h1>People</h1>
+        <nav>{user ? <Link href="/profile">Profile</Link> : <Link href="/login">Log in</Link>}</nav>
+      </header>
+      <Board profiles={tiles} userId={user?.id ?? null} />
+    </main>
   );
 }
