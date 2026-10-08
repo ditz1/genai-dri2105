@@ -1,6 +1,6 @@
-import Link from 'next/link';
 import { getUserAndProfile } from '../lib/supabase/server';
 import Board from './board';
+import Header from './header';
 import { boardSize, placeholderProfiles } from './placeholders';
 
 const maxProfiles = 120;
@@ -34,10 +34,7 @@ export default async function Home() {
   const tiles = [...profiles, ...placeholderProfiles.slice(0, Math.max(0, boardSize - profiles.length))];
   return (
     <main className="board">
-      <header className="board-header">
-        <h1>People</h1>
-        <nav>{user ? <Link href="/profile">Profile</Link> : <Link href="/login">Log in</Link>}</nav>
-      </header>
+      <Header title="People" user={user} />
       <Board profiles={tiles} userId={user?.id ?? null} />
     </main>
   );

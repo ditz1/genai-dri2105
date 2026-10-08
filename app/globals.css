@@ -4,8 +4,10 @@ body { min-height: 100vh; font: 15px/1.5 ui-monospace, SFMono-Regular, Menlo, Co
 a { color: #b79cf0; }
 :focus-visible { outline: 2px solid #b79cf0; outline-offset: 2px; }
 
-.board-header { position: fixed; inset: 0 0 auto; z-index: 2; display: flex; align-items: baseline; justify-content: space-between; padding: 16px 20px; }
-.board-header h1 { margin: 0; font-size: 22px; }
+.site-header { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px 20px; padding: 16px 0; }
+.site-header h1 { margin: 0; font-size: 22px; overflow-wrap: anywhere; }
+.site-header nav { display: flex; gap: 16px; }
+.board .site-header { position: fixed; inset: 0 0 auto; z-index: 2; padding: 16px 20px; }
 html { scroll-snap-type: y proximity; }
 .canvas-host { position: fixed; inset: 0; overflow: hidden; }
 .scroll-track > div { scroll-snap-align: start; }
@@ -42,3 +44,24 @@ html { scroll-snap-type: y proximity; }
 .avatar { width: 96px; height: 96px; border-radius: 50%; object-fit: cover; background: #161b17; border: 1px solid #2f3a31; }
 svg.avatar { fill: #2f3a31; background: #1d241f; }
 .error { color: #f0958a; }
+
+.feed { max-width: 1100px; margin: 0 auto; padding: 0 20px 48px; }
+.feed h2 { margin: 28px 0 0; font-size: 16px; color: #8a968a; }
+.posts { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 20px; margin-top: 16px; }
+.post { display: grid; align-content: start; gap: 8px; padding: 10px; background: #161b17; border: 1px solid #2f3a31; border-radius: 10px; }
+.post img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 6px; background: #1d241f; }
+.post p { margin: 0; overflow-wrap: anywhere; }
+.post .meta { color: #8a968a; font-size: 13px; }
+.votes { display: flex; align-items: center; gap: 10px; }
+.votes form { margin-left: auto; }
+.feed button { font: inherit; color: #0d100e; background: #b79cf0; border: 1px solid #b79cf0; border-radius: 6px; padding: 6px 12px; cursor: pointer; }
+.feed button.secondary, .votes button[aria-pressed] { color: #d8e0d6; background: transparent; border-color: #2f3a31; }
+.votes button[aria-pressed="true"] { color: #0d100e; background: #b79cf0; border-color: #b79cf0; }
+.feed button:disabled { opacity: 0.6; cursor: default; }
+.member { display: flex; align-items: center; gap: 20px; }
+.member dl, .member dd { margin: 0; }
+.member dt { color: #8a968a; font-size: 13px; }
+.prompt-form { display: grid; gap: 8px; max-width: 560px; }
+.prompt-form label { color: #8a968a; font-size: 13px; }
+.prompt-form textarea { font: inherit; color: inherit; background: #161b17; border: 1px solid #2f3a31; border-radius: 6px; padding: 8px 10px; width: 100%; resize: vertical; }
+.prompt-form button { justify-self: start; }

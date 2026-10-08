@@ -354,6 +354,7 @@ export default function Board({ profiles, userId }) {
                 <dd>{open.avatarUrl ? 'Uploaded' : 'Not added yet'}</dd>
               </dl>
             )}
+          {!open.placeholder && <Link href={`/people/${open.id}`}>View posts</Link>}
           {open.id === userId && <Link href="/profile">This is you — edit your profile</Link>}
           <button type="button" className="secondary" onClick={() => setSelected(null)}>Close</button>
         </section>
