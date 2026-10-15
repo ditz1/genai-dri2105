@@ -1,13 +1,17 @@
 * { box-sizing: border-box; }
-html, body { margin: 0; background: #0d100e; }
+/* The section accent eases between colors as you move around the site; app/nav.js sets it from the route. */
+@property --route-accent { syntax: '<color>'; inherits: true; initial-value: #b79cf0; }
+:root { --route-accent: #b79cf0; transition: --route-accent 700ms ease; }
+html, body { margin: 0; }
+/* The body stays transparent so the fixed 3D scene behind it shows through. */
+html { background: #0d100e; }
 body { min-height: 100vh; font: 15px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; color: #d8e0d6; }
 a { color: #b79cf0; }
 :focus-visible { outline: 2px solid #b79cf0; outline-offset: 2px; }
 
-.site-header { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px 20px; padding: 16px 0; }
-.site-header h1 { margin: 0; font-size: 22px; overflow-wrap: anywhere; }
-.site-header nav { display: flex; gap: 16px; }
-.board .site-header { position: fixed; inset: 0 0 auto; z-index: 2; padding: 16px 20px; }
+.site-header { padding: 16px 0 4px; }
+.site-header h1 { margin: 0; font-size: 26px; letter-spacing: -0.01em; overflow-wrap: anywhere; }
+.board .site-header { position: fixed; top: 64px; left: 0; z-index: 2; padding: 12px 20px; pointer-events: none; }
 html { scroll-snap-type: y proximity; }
 .canvas-host { position: fixed; inset: 0; overflow: hidden; }
 .scroll-track > div { scroll-snap-align: start; }
@@ -29,7 +33,7 @@ html { scroll-snap-type: y proximity; }
   .detail { left: 20px; right: 20px; top: auto; bottom: 70px; transform: none; width: auto; }
 }
 
-.page { min-height: 100vh; display: grid; place-items: center; padding: 24px; }
+.page { min-height: 100vh; display: grid; place-items: center; padding: 88px 24px 24px; }
 .card { width: 100%; max-width: 380px; display: grid; gap: 14px; }
 .card h1 { margin: 0; font-size: 22px; }
 .card p, .card dl, .card dd { margin: 0; }
@@ -45,7 +49,7 @@ html { scroll-snap-type: y proximity; }
 svg.avatar { fill: #2f3a31; background: #1d241f; }
 .error { color: #f0958a; }
 
-.feed { max-width: 1100px; margin: 0 auto; padding: 0 20px 48px; }
+.feed { max-width: 1100px; margin: 0 auto; padding: 64px 20px 48px; }
 .feed h2 { margin: 28px 0 0; font-size: 16px; color: #8a968a; }
 .posts { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 20px; margin-top: 16px; }
 .post { display: grid; align-content: start; gap: 8px; padding: 10px; background: #161b17; border: 1px solid #2f3a31; border-radius: 10px; }
@@ -66,7 +70,6 @@ svg.avatar { fill: #2f3a31; background: #1d241f; }
 .prompt-form textarea { font: inherit; color: inherit; background: #161b17; border: 1px solid #2f3a31; border-radius: 6px; padding: 8px 10px; width: 100%; resize: vertical; }
 .prompt-form button { justify-self: start; }
 
-.site-header nav { flex-wrap: wrap; gap: 4px 16px; }
 .eyebrow { margin: 0; color: #8a968a; font-size: 13px; }
 .theme { display: grid; gap: 6px; margin-top: 8px; padding: 16px 18px; background: #161b17; border: 1px solid #2f3a31; border-left: 3px solid #b79cf0; border-radius: 10px; }
 .feed .theme h2 { margin: 0; font-size: 24px; color: #d8e0d6; overflow-wrap: anywhere; }
@@ -143,3 +146,96 @@ svg.avatar { fill: #2f3a31; background: #1d241f; }
 .admin-panel .admin-list { margin: 0; }
 .admin-match { display: grid; gap: 2px; min-width: min(100%, 260px); }
 .badge { margin-left: 8px; padding: 1px 6px; font-size: 11px; color: #0d100e; background: #b79cf0; border-radius: 4px; }
+
+/* 3D background (app/scene.js). It fades in once WebGL is running; a soft vignette keeps text in the middle readable. */
+.scene { position: fixed; inset: 0; z-index: -1; pointer-events: none; opacity: 0; transition: opacity 1.2s ease; }
+.scene[data-ready] { opacity: 1; }
+.scene canvas { display: block; }
+.scene::after { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse 55% 65% at 50% 45%, rgba(13, 16, 14, 0.8), rgba(13, 16, 14, 0.4) 65%, rgba(13, 16, 14, 0.1)); }
+
+/* Floating navigation (app/nav.js). */
+.nav { position: fixed; top: 12px; left: 50%; transform: translateX(-50%); z-index: 50; display: flex; align-items: center; max-width: calc(100vw - 24px); padding: 5px; background: rgba(20, 25, 21, 0.72); -webkit-backdrop-filter: blur(14px) saturate(140%); backdrop-filter: blur(14px) saturate(140%); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 999px; box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.06); }
+.nav-links { display: flex; gap: 2px; min-width: 0; overflow-x: auto; scrollbar-width: none; }
+.nav-links::-webkit-scrollbar { display: none; }
+.nav-links.more-after { -webkit-mask-image: linear-gradient(to right, #000 80%, transparent); mask-image: linear-gradient(to right, #000 80%, transparent); }
+.nav-links.more-before { -webkit-mask-image: linear-gradient(to left, #000 80%, transparent); mask-image: linear-gradient(to left, #000 80%, transparent); }
+.nav-links.more-before.more-after { -webkit-mask-image: linear-gradient(to right, transparent, #000 20%, #000 80%, transparent); mask-image: linear-gradient(to right, transparent, #000 20%, #000 80%, transparent); }
+.nav-link { position: relative; flex: none; display: inline-flex; align-items: center; gap: 6px; padding: 8px 15px; border-radius: 999px; color: #b3beb1; font-size: 14px; text-decoration: none; white-space: nowrap; transition: color 0.2s ease, background-color 0.2s ease; }
+.nav-link:hover { color: #f2f5f1; background: rgba(255, 255, 255, 0.06); }
+.nav-link[aria-current="page"] { color: var(--route-accent); }
+.nav-link:focus-visible { outline-offset: -2px; }
+.nav-highlight { position: absolute; inset: 0; border-radius: inherit; background: color-mix(in srgb, var(--route-accent) 16%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--route-accent) 45%, transparent), 0 0 22px color-mix(in srgb, var(--route-accent) 22%, transparent); }
+.nav-label { position: relative; }
+.nav-pending { position: relative; width: 0; height: 6px; margin-left: -6px; border-radius: 50%; background: var(--route-accent); opacity: 0; transition: opacity 0.2s ease; }
+.nav-pending.is-pending { width: 6px; margin-left: 0; opacity: 1; animation: pulse 0.8s ease-in-out infinite; }
+.nav-divider { flex: none; width: 1px; height: 20px; margin: 0 4px; background: rgba(255, 255, 255, 0.1); }
+.nav-placeholder { width: 78px; height: 35px; }
+@keyframes pulse { 50% { transform: scale(0.5); opacity: 0.4; } }
+@media (max-width: 560px) {
+  .nav { top: 8px; }
+  .nav-link { padding: 7px 10px; font-size: 13px; }
+}
+
+/* Buttons: a lit accent pill for the main action, a quiet outline for the rest. */
+.feed button, .card button, .detail button { border-radius: 999px; transition: transform 0.15s ease, box-shadow 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease; }
+.feed button:not(.secondary):not([aria-pressed]), .card button:not(.secondary), .votes button[aria-pressed="true"] { color: #120f1a; background: linear-gradient(180deg, #cdb8f7, #a586e8); border-color: transparent; box-shadow: 0 4px 16px rgba(183, 156, 240, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.4); }
+.feed button.secondary, .card button.secondary, .detail button, .votes button[aria-pressed="false"] { background: rgba(255, 255, 255, 0.03); border-color: rgba(255, 255, 255, 0.12); }
+.feed button:hover:not(:disabled), .card button:hover:not(:disabled), .detail button:hover { transform: translateY(-1px); }
+.feed button:not(.secondary):not([aria-pressed]):hover:not(:disabled), .card button:not(.secondary):hover:not(:disabled) { box-shadow: 0 8px 24px rgba(183, 156, 240, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.4); }
+.feed button.secondary:hover:not(:disabled), .card button.secondary:hover:not(:disabled), .detail button:hover, .votes button[aria-pressed="false"]:hover:not(:disabled) { border-color: rgba(183, 156, 240, 0.6); background: rgba(183, 156, 240, 0.08); }
+.feed button:active:not(:disabled), .card button:active:not(:disabled) { transform: translateY(0) scale(0.97); }
+
+/* Panels sit on the 3D scene, so they are near-opaque, and lift slightly under the pointer. */
+.post, .tournament-card, .matchup, .theme, .stats div, .admin-list li, .admin-row, .bracket-match, .champion { background-color: rgba(22, 27, 23, 0.9); }
+.post, .tournament-card, .matchup { transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease; }
+.post:hover, .tournament-card:hover, .matchup:hover { transform: translateY(-3px); border-color: color-mix(in srgb, var(--route-accent) 45%, #2f3a31); box-shadow: 0 14px 30px rgba(0, 0, 0, 0.35); }
+.theme { border-left-color: var(--route-accent); }
+
+/* Pages rise into place as they appear, a beat apart from top to bottom, and cards in grids follow one by one. */
+@keyframes rise { from { opacity: 0; transform: translateY(14px); filter: blur(4px); } }
+.feed > *, .page .card { animation: rise 0.55s cubic-bezier(0.2, 0.7, 0.2, 1) backwards; }
+.feed > :nth-child(2) { animation-delay: 50ms; }
+.feed > :nth-child(3) { animation-delay: 100ms; }
+.feed > :nth-child(4) { animation-delay: 150ms; }
+.feed > :nth-child(n + 5) { animation-delay: 200ms; }
+.posts > *, .tournaments > *, .matchups > * { animation: rise 0.5s cubic-bezier(0.2, 0.7, 0.2, 1) backwards; animation-delay: 160ms; }
+.posts > :nth-child(2), .tournaments > :nth-child(2), .matchups > :nth-child(2) { animation-delay: 200ms; }
+.posts > :nth-child(3), .tournaments > :nth-child(3), .matchups > :nth-child(3) { animation-delay: 240ms; }
+.posts > :nth-child(4), .tournaments > :nth-child(4), .matchups > :nth-child(4) { animation-delay: 280ms; }
+.posts > :nth-child(5), .tournaments > :nth-child(5) { animation-delay: 320ms; }
+.posts > :nth-child(6), .tournaments > :nth-child(6) { animation-delay: 360ms; }
+.posts > :nth-child(n + 7), .tournaments > :nth-child(n + 7) { animation-delay: 400ms; }
+
+/* Loading placeholder (app/loading.js). */
+@keyframes shimmer { to { background-position: -150% 0; } }
+.skeleton-title, .skeleton-banner, .skeleton-card { border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 10px; background: linear-gradient(100deg, rgba(255, 255, 255, 0.03) 35%, rgba(255, 255, 255, 0.08) 50%, rgba(255, 255, 255, 0.03) 65%) 150% 0 / 300% 100%; }
+.skeleton-title { width: min(240px, 60%); height: 32px; margin: 18px 0 4px; }
+.skeleton-banner { height: 112px; margin-top: 8px; }
+.skeleton-card { aspect-ratio: 4 / 5; }
+.skeleton > *, .skeleton .posts > * { animation: rise 0.4s ease backwards, shimmer 1.6s linear infinite; }
+.skeleton .posts { animation: none; }
+
+/* Page transitions (app/template.js, app/loading.js). The live scene and the nav stay put; only the page moves. */
+::view-transition { pointer-events: none; }
+::view-transition-old(root) { display: none; }
+::view-transition-new(root) { animation: none; }
+::view-transition-group(site-nav) { animation: none; z-index: 100; }
+::view-transition-old(site-nav) { display: none; }
+::view-transition-new(site-nav) { animation: none; }
+::view-transition-group(.nav-glide) { z-index: 101; animation-duration: 380ms; animation-timing-function: cubic-bezier(0.3, 0.7, 0.2, 1); }
+::view-transition-old(.page-fade) { animation: 160ms ease-in both vt-fade-out; }
+::view-transition-new(.page-fade) { animation: 340ms cubic-bezier(0.2, 0.7, 0.2, 1) 80ms both vt-fade-in; }
+::view-transition-old(.nav-forward) { --slide: -56px; animation: 180ms ease-in both vt-slide-out; }
+::view-transition-new(.nav-forward) { --slide: 56px; animation: 380ms cubic-bezier(0.2, 0.7, 0.2, 1) 60ms both vt-slide-in; }
+::view-transition-old(.nav-back) { --slide: 56px; animation: 180ms ease-in both vt-slide-out; }
+::view-transition-new(.nav-back) { --slide: -56px; animation: 380ms cubic-bezier(0.2, 0.7, 0.2, 1) 60ms both vt-slide-in; }
+::view-transition-old(.skeleton-out) { animation: 220ms ease-out both vt-fade-out; }
+@keyframes vt-fade-out { to { opacity: 0; filter: blur(6px); transform: scale(0.985); } }
+@keyframes vt-fade-in { from { opacity: 0; filter: blur(6px); transform: translateY(12px); } }
+@keyframes vt-slide-out { to { opacity: 0; filter: blur(4px); translate: var(--slide); } }
+@keyframes vt-slide-in { from { opacity: 0; filter: blur(4px); translate: var(--slide); } }
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(*), ::view-transition-new(*), ::view-transition-group(*) { animation-duration: 0s !important; animation-delay: 0s !important; }
+  *, *::before, *::after { animation-duration: 0s !important; animation-delay: 0s !important; transition-duration: 0s !important; }
+}

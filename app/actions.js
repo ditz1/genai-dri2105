@@ -69,6 +69,8 @@ export async function updateProfile(previousState, formData) {
 export async function signOut() {
   const supabase = await createClient();
   await supabase.auth.signOut();
+  // The nav in the root layout shows the account link, so it has to render again.
+  revalidatePath('/', 'layout');
   redirect('/');
 }
 

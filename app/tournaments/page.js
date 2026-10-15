@@ -35,7 +35,7 @@ function TournamentCard({ tournament }) {
 }
 
 export default async function Tournaments() {
-  const { supabase, user, isAdmin } = await getUserAndProfile();
+  const { supabase, user } = await getUserAndProfile();
   await advanceTournaments(supabase);
   const [today, tournaments] = await Promise.all([getToday(supabase), getTournaments(supabase)]);
   const entries = await countEntries(supabase, today.day);
@@ -43,7 +43,7 @@ export default async function Tournaments() {
   const finished = tournaments.filter((tournament) => tournament.status === 'finished');
   return (
     <main className="feed">
-      <Header title="Tournaments" user={user} admin={isAdmin} />
+      <Header title="Tournaments" />
       <ThemeBanner today={today} entries={entries}>
         <p><Link href="/create">Make an image for today's theme</Link></p>
       </ThemeBanner>

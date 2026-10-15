@@ -13,14 +13,14 @@ export const metadata = { title: 'Create an image' };
 export const maxDuration = 60;
 
 export default async function Create() {
-  const { supabase, user, profile, isAdmin } = await getUserAndProfile();
+  const { supabase, user, profile } = await getUserAndProfile();
   if (!user) redirect('/login');
   if (!hasName(profile)) redirect('/onboarding');
   const today = await getToday(supabase);
   const [drafts, entries] = await Promise.all([getPosts(supabase, user, { drafts: true }), countEntries(supabase, today.day)]);
   return (
     <main className="feed">
-      <Header title="Create" user={user} admin={isAdmin} />
+      <Header title="Create" />
       <ThemeBanner today={today} entries={entries} />
       <PromptForm theme={today.theme?.title} />
       {drafts.length > 0 && <h2>Not posted yet</h2>}

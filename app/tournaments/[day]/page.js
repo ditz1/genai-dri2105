@@ -82,7 +82,7 @@ export default async function TournamentPage({ params }) {
   const open = status === 'running' ? tournament.matches.filter((match) => match.round === currentRound && match.a && match.b && !match.winnerId) : [];
   return (
     <main className="feed">
-      <Header title={tournament.theme ?? 'Tournament'} user={user} admin={isAdmin} />
+      <Header title={tournament.theme ?? 'Tournament'} />
       <section className="theme">
         <p className="eyebrow">Theme for {formatDay(day, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })} · {tournament.entryCount} {tournament.entryCount === 1 ? 'image' : 'images'}</p>
         <h2>{tournament.theme ?? 'Untitled theme'}</h2>

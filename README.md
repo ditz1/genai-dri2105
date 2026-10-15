@@ -70,6 +70,12 @@ To add another admin, insert their user id in the SQL editor: `insert into publi
 
 `supabase/migrations/20261015000000_create_themes_and_tournaments.sql` and `20261015010000_admin_tournament_controls.sql` add all of this alongside the existing tables without changing their rows. They need the pg_cron extension, which Supabase includes.
 
+## Look and feel
+
+`app/scene.js` draws a field of low-poly shapes and stars with Three.js behind every page. It sits in the root layout, so it keeps running across navigations: it drifts with the pointer and scroll, shifts to each section's accent color (`lib/route-theme.js`), and rushes forward while a page loads. The floating navigation (`app/nav.js`) also lives in the layout; its highlight glides to the current section and the account link fills in once the session is known.
+
+Page changes animate with React's `<ViewTransition>`: `app/template.js` slides pages left or right depending on which way you move through the nav (other links fade), and `app/loading.js` shows a placeholder the moment a link is clicked, which tells the scene to speed up and fades out as the page arrives. Page content rises into place in a short stagger (`app/globals.css`). Everything respects the reduced-motion setting.
+
 ## The board
 
 `app/page.js` loads members who have finished onboarding, newest first, up to 120. `app/board.js` draws them three at a time with Three.js: each profile is the front face of a box, showing the member's photo (or a blank silhouette) and name. Scrolling down brings up the next row of three (on tall screens, the next card in a column), and only the cards near the view are kept in the scene. Clicking a card brings it forward, dims the others, and opens a panel with more about that member and a link to their posts; Escape, Close, or a click elsewhere puts it back. While fewer than 12 members have joined, sample profiles from `app/placeholders.js` fill the remaining spots.

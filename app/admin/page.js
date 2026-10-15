@@ -38,7 +38,7 @@ export default async function Admin() {
 
   return (
     <main className="feed admin">
-      <Header title="Admin" user={user} admin />
+      <Header title="Admin" />
 
       <dl className="stats">
         <div><dt>Members</dt><dd>{members?.length ?? '—'}</dd></div>
