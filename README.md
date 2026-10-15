@@ -72,9 +72,9 @@ To add another admin, insert their user id in the SQL editor: `insert into publi
 
 ## Look and feel
 
-`app/scene.js` draws a field of low-poly shapes and stars with Three.js behind every page. It sits in the root layout, so it keeps running across navigations: it drifts with the pointer and scroll, shifts to each section's accent color (`lib/route-theme.js`), and rushes forward while a page loads. The floating navigation (`app/nav.js`) also lives in the layout; its highlight glides to the current section and the account link fills in once the session is known.
+`app/scene.js` runs Conway's Game of Life behind every page and draws each live cell as a small icosphere with Three.js. The board wraps around at its edges and the camera glides over it at an angle, with fog hiding where it repeats, so it looks endless; new patterns are sown whenever fewer than 8% of cells are alive, so it never settles. It sits in the root layout and keeps running across navigations: it follows the pointer (and leaves a faint trail of new cells behind it), takes on each section's accent color (`lib/route-theme.js`), sows fresh life on every navigation, and runs several times faster while a page loads. The floating navigation (`app/nav.js`) also lives in the layout; its highlight glides to the current section and the account link fills in once the session is known.
 
-Page changes animate with React's `<ViewTransition>`: `app/template.js` slides pages left or right depending on which way you move through the nav (other links fade), and `app/loading.js` shows a placeholder the moment a link is clicked, which tells the scene to speed up and fades out as the page arrives. Page content rises into place in a short stagger (`app/globals.css`). Everything respects the reduced-motion setting.
+Page changes animate with React's `<ViewTransition>`: `app/template.js` slides pages left or right depending on which way you move through the nav (other links fade), and `app/loading.js` shows a placeholder the moment a link is clicked, which speeds up the Game of Life and fades out as the page arrives. Page content rises into place in a short stagger (`app/globals.css`). Everything respects the reduced-motion setting.
 
 ## The board
 
