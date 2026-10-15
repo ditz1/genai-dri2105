@@ -16,7 +16,7 @@ const cameraBack = -24;
 const lookAhead = 10;
 const restingFov = 50;
 // Generations per second, and cells per second the camera glides, at rest and while a page is loading.
-const idle = { generations: 5, glide: 0.5 };
+const idle = { generations: 1.2, glide: 0.2 };
 const loading = { generations: 32, glide: 14 };
 
 // Small patterns that keep the board alive: gliders and spaceships travel, the rest burst into long-lived chaos.
@@ -225,8 +225,9 @@ export default function Scene() {
       young.copy(accent).lerp(white, 0.2);
       old.copy(accent).multiplyScalar(0.45);
 
-      // Spheres grow in as cells are born and shrink away as they die; only visible ones are drawn.
-      const grow = 1 - Math.exp(-dt * Math.max(8, generations * 1.5));
+      // Spheres grow in as cells are born and shrink away as they die, gently at rest and snappily when the board
+      // is running fast. Only visible ones are drawn.
+      const grow = 1 - Math.exp(-dt * Math.max(2.5, generations * 1.5));
       let drawn = 0;
       for (let row = 0; row < rows; row += 1) {
         const y = wrapRow(row - Math.floor(glide)) - rows / 2 - (glide % 1);
