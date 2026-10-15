@@ -127,6 +127,7 @@ export async function publishPost(formData) {
   if (error) console.error('Failed to publish post:', error.message);
   revalidatePath('/create');
   revalidatePath('/posts');
+  revalidatePath('/tournaments');
   revalidatePath(`/people/${user.id}`);
 }
 
@@ -174,4 +175,33 @@ export async function vote(postId, value) {
   }
   const { data: post } = await supabase.from('posts').select('score').eq('id', postId).maybeSingle();
   return { score: post?.score ?? 0, vote: value };
+}
+
+// Records the signed-in user's pick in a bracket matchup: 'a', 'b', or null to take it back. Returns the new counts.
+export async function voteInMatch(matchId, side) {
+  if (typeof matchId !== 'string' || !['a', 'b', null].includes(side)) return { error: 'That vote could not be saved.' };
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: 'Log in to vote.' };
+
+  let error;
+  if (side === null) {
+    ({ error } = await supabase.from('match_votes').delete().eq('match_id', matchId).eq('user_id', user.id));
+  } else {
+    const { data: changed, error: updateError } = await supabase
+      .from('match_votes')
+      .update({ side })
+      .eq('match_id', matchId)
+      .eq('user_id', user.id)
+      .select('match_id');
+    error = updateError;
+    if (!error && !changed.length) ({ error } = await supabase.from('match_votes').insert({ match_id: matchId, side }));
+  }
+  if (error) {
+    // Row level security rejects votes once the round has ended.
+    console.error('Failed to save match vote:', error.message);
+    return { error: 'That vote could not be saved. Voting on this matchup may have closed.' };
+  }
+  const { data: match } = await supabase.from('matches').select('votes_a, votes_b').eq('id', matchId).maybeSingle();
+  return { votesA: match?.votes_a ?? 0, votesB: match?.votes_b ?? 0, side };
 }

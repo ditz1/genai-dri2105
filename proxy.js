@@ -2,7 +2,7 @@ import { createServerClient } from '@supabase/ssr';
 import { NextResponse } from 'next/server';
 import { supabaseUrl, supabaseKey } from './lib/supabase/env';
 
-const protectedPaths = ['/profile', '/onboarding', '/create'];
+const protectedPaths = ['/profile', '/onboarding', '/create', '/admin'];
 
 // Refreshes the Supabase session cookie on each request and keeps signed-out visitors off protected routes.
 export async function proxy(request) {

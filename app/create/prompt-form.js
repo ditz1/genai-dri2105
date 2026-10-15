@@ -3,11 +3,11 @@
 import { useActionState } from 'react';
 import { generatePost } from '../actions';
 
-export default function PromptForm() {
+export default function PromptForm({ theme }) {
   const [state, formAction, pending] = useActionState(generatePost, {});
   return (
     <form className="prompt-form" action={formAction}>
-      <label htmlFor="prompt">Describe an image and AI will generate it. You choose whether to post it.</label>
+      <label htmlFor="prompt">Describe an image{theme ? ` for today's theme, ${theme},` : ''} and AI will generate it. You choose whether to post it; posted images enter tonight's bracket.</label>
       <textarea id="prompt" name="prompt" rows={3} maxLength={500} defaultValue={state.prompt ?? ''} placeholder="A lighthouse made of glass at sunrise" required />
       {state.error && <p className="error" role="alert">{state.error}</p>}
       <button disabled={pending}>{pending ? 'Generating…' : 'Generate'}</button>

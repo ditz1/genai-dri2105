@@ -10,7 +10,7 @@ const uuid = /^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i;
 
 export default async function Member({ params }) {
   const { id } = await params;
-  const { supabase, user } = await getUserAndProfile();
+  const { supabase, user, isAdmin } = await getUserAndProfile();
   if (!supabase || !uuid.test(id)) notFound();
   const { data: member } = await supabase
     .from('profiles')
@@ -26,7 +26,7 @@ export default async function Member({ params }) {
     : null;
   return (
     <main className="feed">
-      <Header title={`${member.first_name} ${member.last_name}`} user={user} />
+      <Header title={`${member.first_name} ${member.last_name}`} user={user} admin={isAdmin} />
       <section className="member">
         {avatarUrl ? <img className="avatar" src={avatarUrl} alt="" /> : <Silhouette className="avatar" />}
         <dl>

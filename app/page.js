@@ -29,12 +29,12 @@ async function getProfiles(supabase) {
 }
 
 export default async function Home() {
-  const { supabase, user } = await getUserAndProfile();
+  const { supabase, user, isAdmin } = await getUserAndProfile();
   const profiles = await getProfiles(supabase);
   const tiles = [...profiles, ...placeholderProfiles.slice(0, Math.max(0, boardSize - profiles.length))];
   return (
     <main className="board">
-      <Header title="People" user={user} />
+      <Header title="People" user={user} admin={isAdmin} />
       <Board profiles={tiles} userId={user?.id ?? null} />
     </main>
   );

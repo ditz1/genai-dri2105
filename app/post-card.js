@@ -36,6 +36,7 @@ export default function PostCard({ post, signedIn, owned }) {
       <p className="prompt">{post.prompt}</p>
       <p className="meta">
         <Link href={`/people/${post.userId}`}>{post.author}</Link> · {post.date}
+        {post.theme && <> · {post.theme}</>}
       </p>
       <div className="votes">
         {signedIn ? (
