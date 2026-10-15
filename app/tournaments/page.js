@@ -1,17 +1,18 @@
 import Link from 'next/link';
-import { getToday, formatDay } from '../../lib/themes';
-import { advanceTournaments, countEntries, getTournaments, roundName } from '../../lib/tournaments';
+import { countEntries, getOpenThemes } from '../../lib/themes';
+import { advanceTournaments, getTournaments, roundName } from '../../lib/tournaments';
 import { getUserAndProfile } from '../../lib/supabase/server';
 import Countdown from '../countdown';
+import LocalTime from '../local-time';
 import Header from '../header';
 import ThemeBanner from '../theme-banner';
 
 export const metadata = { title: 'Tournaments' };
 
 function TournamentCard({ tournament }) {
-  const { day, theme, status, champion, contenders, currentRound, rounds, roundEndsAt, entryCount } = tournament;
+  const { id, theme, status, champion, contenders, currentRound, rounds, roundEndsAt, entryCount, startedAt } = tournament;
   return (
-    <Link className="tournament-card" href={`/tournaments/${day}`}>
+    <Link className="tournament-card" href={`/tournaments/${id}`}>
       {champion ? (
         <img src={champion.imageUrl} alt={champion.prompt} loading="lazy" />
       ) : contenders.length ? (
@@ -19,8 +20,8 @@ function TournamentCard({ tournament }) {
       ) : (
         <div className="empty-image" />
       )}
-      <p className="eyebrow">{formatDay(day)}</p>
-      <h3>{theme ?? 'Untitled theme'}</h3>
+      <p className="eyebrow">Started <LocalTime value={startedAt} /></p>
+      <h3>{theme?.title ?? 'Untitled theme'}</h3>
       {status === 'running' ? (
         <p className="meta">
           {roundName(currentRound, rounds)} · {entryCount} images · ends in <Countdown until={roundEndsAt} />
@@ -28,35 +29,39 @@ function TournamentCard({ tournament }) {
       ) : status === 'paused' ? (
         <p className="meta">{roundName(currentRound, rounds)} · {entryCount} images · paused</p>
       ) : (
-        <p className="meta">{champion ? `Won by ${champion.author}` : 'No champion'} · {entryCount} {entryCount === 1 ? 'image' : 'images'}</p>
+        <p className="meta">{champion ? `Champion by ${champion.author}` : 'No champion'} · {entryCount} {entryCount === 1 ? 'image' : 'images'}</p>
       )}
     </Link>
   );
 }
 
 export default async function Tournaments() {
-  const { supabase, user } = await getUserAndProfile();
+  const { supabase } = await getUserAndProfile();
   await advanceTournaments(supabase);
-  const [today, tournaments] = await Promise.all([getToday(supabase), getTournaments(supabase)]);
-  const entries = await countEntries(supabase, today.day);
+  const [themes, tournaments] = await Promise.all([getOpenThemes(supabase), getTournaments(supabase)]);
+  const entries = await countEntries(supabase, themes.map((theme) => theme.id));
   const live = tournaments.filter((tournament) => tournament.status === 'running' || tournament.status === 'paused');
   const finished = tournaments.filter((tournament) => tournament.status === 'finished');
   return (
     <main className="feed">
       <Header title="Tournaments" />
-      <ThemeBanner today={today} entries={entries}>
-        <p><Link href="/create">Make an image for today's theme</Link></p>
-      </ThemeBanner>
+      {themes.length === 0 && <ThemeBanner />}
+      {themes.map((theme) => (
+        <ThemeBanner key={theme.id} theme={theme} entries={entries[theme.id] ?? 0}>
+          <p><Link href={`/create?theme=${theme.id}`}>Make an image for this theme</Link></p>
+        </ThemeBanner>
+      ))}
 
       <h2>Vote now</h2>
-      {live.length === 0 && <p>No brackets are running right now. The next one starts at midnight with today's images.</p>}
+      {live.length === 0 && <p>No brackets are running right now. The next one starts when an open theme's entries close.</p>}
       <div className="tournaments">
-        {live.map((tournament) => <TournamentCard key={tournament.day} tournament={tournament} />)}
+        {live.map((tournament) => <TournamentCard key={tournament.id} tournament={tournament} />)}
       </div>
 
-      {finished.length > 0 && <h2>Champions</h2>}
+      <h2>Past tournaments</h2>
+      {finished.length === 0 && <p>No tournament has finished yet. Each one's champion shows up here.</p>}
       <div className="tournaments">
-        {finished.map((tournament) => <TournamentCard key={tournament.day} tournament={tournament} />)}
+        {finished.map((tournament) => <TournamentCard key={tournament.id} tournament={tournament} />)}
       </div>
     </main>
   );

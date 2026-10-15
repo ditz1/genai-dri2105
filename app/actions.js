@@ -77,8 +77,10 @@ export async function signOut() {
 // Generates an image from the prompt and saves it, with the prompt and model, as a draft post.
 export async function generatePost(previousState, formData) {
   const prompt = String(formData.get('prompt') ?? '').trim();
-  if (!prompt) return { error: 'Describe the image you want.' };
-  if (prompt.length > maxPromptLength) return { error: `Prompts must be ${maxPromptLength} characters or fewer.`, prompt };
+  const themeValue = String(formData.get('theme_id') ?? '');
+  const themeId = /^\d+$/.test(themeValue) ? Number(themeValue) : null;
+  if (!prompt) return { error: 'Describe the image you want.', themeId };
+  if (prompt.length > maxPromptLength) return { error: `Prompts must be ${maxPromptLength} characters or fewer.`, prompt, themeId };
 
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -90,14 +92,18 @@ export async function generatePost(previousState, formData) {
     .select('id', { count: 'exact', head: true })
     .eq('user_id', user.id)
     .gte('created_at', since);
-  if (count >= dailyGenerations) return { error: `You can generate ${dailyGenerations} images a day. Try again tomorrow.`, prompt };
+  if (count >= dailyGenerations) return { error: `You can generate ${dailyGenerations} images a day. Try again tomorrow.`, prompt, themeId };
+  if (themeId !== null) {
+    const { data: open } = await supabase.rpc('theme_is_open', { target_theme: themeId });
+    if (!open) return { error: "That theme isn't taking entries any more. Pick another one.", prompt };
+  }
 
   let image;
   try {
     image = await generateImage(prompt);
   } catch (error) {
     console.error('Failed to generate image:', error.message);
-    return { error: 'Could not generate that image. Try again.', prompt };
+    return { error: 'Could not generate that image. Try again.', prompt, themeId };
   }
 
   const path = `${user.id}/${crypto.randomUUID()}.${image.extension}`;
@@ -105,13 +111,13 @@ export async function generatePost(previousState, formData) {
   const { error: uploadError } = await generations.upload(path, image.bytes, { contentType: image.contentType });
   if (uploadError) {
     console.error('Failed to store generated image:', uploadError.message);
-    return { error: 'Could not save that image. Try again.', prompt };
+    return { error: 'Could not save that image. Try again.', prompt, themeId };
   }
-  const { error } = await supabase.from('posts').insert({ prompt, model: imageModel, image_path: path });
+  const { error } = await supabase.from('posts').insert({ prompt, model: imageModel, image_path: path, theme_id: themeId });
   if (error) {
     console.error('Failed to save post:', error.message);
     await generations.remove([path]);
-    return { error: 'Could not save that image. Try again.', prompt };
+    return { error: 'Could not save that image. Try again.', prompt, themeId };
   }
   revalidatePath('/create');
   return {};

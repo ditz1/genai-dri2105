@@ -1,6 +1,6 @@
 # People — a profile board
 
-A Next.js App Router app backed by Supabase. The home page shows member profiles as 3D cards, three at a time, each with the member's name and photo. Members sign in with Google, manage their own name and photo, generate images with AI for the day's theme, post them, vote on each other's posts, and vote in daily bracket tournaments between the images.
+A Next.js App Router app backed by Supabase. The home page shows member profiles as 3D cards, three at a time, each with the member's name and photo. Members sign in with Google, manage their own name and photo, generate images with AI for open themes, post them, vote on each other's posts, and vote in bracket tournaments between each theme's images.
 
 ## Run locally
 
@@ -41,34 +41,37 @@ These are read only on the server (`lib/generate.js`) and never reach the browse
 
 `supabase/migrations/20261008000000_create_posts_and_votes.sql` creates both tables and their row level security rules: signed-out visitors can only read posted images and profiles; members can create, post and delete only their own images and can never write a score; members can add, change and remove only their own votes and cannot read anyone else's.
 
-## Daily themes and tournaments
+## Themes and tournaments
 
-Every day has a theme, like "Woodlands" or "Video Game Characters". The first time anyone loads a page that shows it, the server asks Gemini for one (`lib/gemini.js`, model `gemini-3.8-flash` unless `GEMINI_MODEL` says otherwise), avoiding the last 30 themes, and saves it in `daily_themes`. If Gemini isn't configured or fails, a theme is picked from a built-in list. Saving it needs the project's secret key because visitors can't write themes. Add both to `.env.local` (and to Vercel):
+A theme, like "Woodlands" or "Video Game Characters", takes entries for a window of time (24 hours by default) and then becomes a tournament. Each theme is its own row in `themes`, with its own entries and its own bracket, so any number can run at once and changing one never touches another.
+
+When no theme is open, the server asks Gemini for one (`lib/gemini.js`, model `gemini-3.8-flash` unless `GEMINI_MODEL` says otherwise), avoiding the last 30 themes, and opens it with the default window. If Gemini isn't configured or fails, a theme is picked from a built-in list. Opening it needs the project's secret key because visitors can't write themes. Add both to `.env.local` (and to Vercel):
 
 ```sh
 GEMINI_API_KEY=...            # https://aistudio.google.com/apikey
 SUPABASE_SECRET_KEY=sb_secret_...   # Project Settings → API Keys → Secret keys
 ```
 
-Both are read only on the server. Without the secret key the day shows "No theme yet" until an admin sets one.
+Both are read only on the server. Without the secret key no theme opens automatically, but an admin can still open one.
 
-Each image is tagged with the theme day it was generated on (`posts.theme_day`, set by a trigger). Images posted for a theme day are seeded into a bracket at midnight (America/New_York by default), ordered by their up/down score, with byes for the top seeds when the count isn't a power of two. Members pick one side of each matchup at `/tournaments/<day>`; a round lasts 24 hours by default, the side with more votes advances, ties go to the higher seed, and the last image left is the champion. `/tournaments` lists live brackets and past champions.
+Each image is tagged with the open theme it was generated for (`posts.theme_id`); when more than one theme is open, `/create` asks which. Row level security only accepts a theme that is open at that moment. When a theme's entries close, its posted images are seeded into a bracket, ordered by their up/down score, with byes for the top seeds when the count isn't a power of two. Members pick one side of each matchup at `/tournaments/<theme id>`; a round lasts 24 hours by default, the side with more votes advances, ties go to the higher seed, and the last image left is the champion. `/tournaments` lists open themes, live brackets and past champions.
 
-The database runs the clock: `public.advance_tournaments()` starts due brackets and closes finished rounds, pg_cron calls it every minute, and pages call it before showing brackets. Matchup votes live in `match_votes` (one per member per matchup, readable only by their owner), and row level security only accepts them while the matchup's round is open. Images posted before themes existed have no theme day and never enter a bracket.
+The database runs the clock: `public.advance_tournaments()` starts brackets for themes whose entries have closed and closes finished rounds, pg_cron calls it every minute, and pages call it before showing brackets. Matchup votes live in `match_votes` (one per member per matchup, readable only by their owner), and row level security only accepts them while the matchup's round is open. Images made before themes existed have no theme and never enter a bracket.
 
 ## Admin panel
 
 `/admin` is for members listed in the `admins` table, which starts with danielitzler@gmail.com. Everyone else gets a 404, and the database checks `public.is_admin()` for every admin action, so the panel can't be used by calling the API directly. Admins can:
 
-- edit today's theme, ask Gemini for a new one, and schedule themes for future days (hidden until their day)
-- start a bracket early (today or any past theme day), end the current round now, pause and resume a bracket, set how long the current round has left, finish a bracket at once, cancel it, or re-seed it from scratch
+- open a new theme at any time, written by hand or suggested by Gemini, now or in a given number of hours, taking entries for as long as they choose; it runs alongside any others
+- reword any one theme, change how long it keeps taking entries, close its entries now to start its bracket, or remove one that hasn't opened yet
+- end a bracket's current round now, pause and resume it, set how long the round has left, finish it at once, cancel it, or re-seed it from scratch
 - decide a single matchup by hand or reopen it, from the admin controls on the bracket page
-- change how long rounds last and the time zone theme days follow
+- change how long new themes take entries and how long rounds last
 - delete any post, and see every member with their email and post count
 
 To add another admin, insert their user id in the SQL editor: `insert into public.admins (user_id) select id from auth.users where email = '...';`
 
-`supabase/migrations/20261015000000_create_themes_and_tournaments.sql` and `20261015010000_admin_tournament_controls.sql` add all of this alongside the existing tables without changing their rows. They need the pg_cron extension, which Supabase includes.
+`supabase/migrations/20261015000000_create_themes_and_tournaments.sql` and `20261015010000_admin_tournament_controls.sql` add tournaments alongside the existing tables, and `20261015020000_independent_themes.sql` replaces the original one-theme-per-day design with independent themes, carrying every existing theme, image, bracket and vote over. They need the pg_cron extension, which Supabase includes.
 
 ## Look and feel
 

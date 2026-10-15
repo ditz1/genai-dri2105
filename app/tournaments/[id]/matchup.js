@@ -4,7 +4,8 @@ import Link from 'next/link';
 import { useState, useTransition } from 'react';
 import { voteInMatch } from '../../actions';
 
-// One open head-to-head matchup. Signed-in members pick a side; picking it again takes the vote back.
+// One open head-to-head matchup. Each member gets a single pick per matchup (the database allows one vote row per
+// member and matchup): choosing the other image moves the vote there, and choosing the same one again takes it back.
 export default function Matchup({ match, signedIn }) {
   const [votes, setVotes] = useState({ a: match.votesA, b: match.votesB });
   const [myVote, setMyVote] = useState(match.myVote);
@@ -49,7 +50,7 @@ export default function Matchup({ match, signedIn }) {
               <div className="votes">
                 {signedIn ? (
                   <button type="button" aria-pressed={myVote === side} disabled={pending} onClick={() => pick(side)}>
-                    {myVote === side ? 'Voted' : 'Vote'}
+                    {myVote === side ? '✓ Your pick' : myVote ? 'Switch to this' : 'Vote for this'}
                   </button>
                 ) : null}
                 <span>{votes[side]} {votes[side] === 1 ? 'vote' : 'votes'}</span>
@@ -58,7 +59,13 @@ export default function Matchup({ match, signedIn }) {
           );
         })}
       </div>
-      {!signedIn && <p className="meta"><Link href="/login">Log in to vote</Link></p>}
+      {signedIn ? (
+        <p className="meta">
+          {myVote ? 'You get one pick per matchup. Switch it to the other image, or click your pick again to take it back.' : 'Pick one of the two images.'}
+        </p>
+      ) : (
+        <p className="meta"><Link href="/login">Log in to vote</Link></p>
+      )}
       {error && <p className="error" role="alert">{error}</p>}
     </article>
   );

@@ -76,6 +76,14 @@ svg.avatar { fill: #2f3a31; background: #1d241f; }
 .theme p { margin: 0; }
 .theme .meta, .feed .meta { color: #8a968a; font-size: 13px; }
 .prompt-form { margin-top: 20px; }
+.theme + .theme { margin-top: 12px; }
+.theme-choice { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; padding: 0; border: 0; }
+.theme-choice legend { margin-bottom: 8px; padding: 0; color: #8a968a; font-size: 13px; }
+.theme-choice label { cursor: pointer; }
+.theme-choice input { position: absolute; opacity: 0; pointer-events: none; }
+.theme-choice span { display: inline-block; padding: 6px 14px; color: #b3beb1; border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 999px; transition: color 0.2s ease, border-color 0.2s ease, background-color 0.2s ease; }
+.theme-choice input:checked + span { color: var(--route-accent); border-color: color-mix(in srgb, var(--route-accent) 55%, transparent); background: color-mix(in srgb, var(--route-accent) 14%, transparent); }
+.theme-choice input:focus-visible + span { outline: 2px solid #b79cf0; outline-offset: 2px; }
 
 .tournaments { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 20px; margin-top: 16px; }
 .tournament-card { display: grid; align-content: start; gap: 6px; padding: 10px; color: inherit; text-decoration: none; background: #161b17; border: 1px solid #2f3a31; border-radius: 10px; }
@@ -145,6 +153,12 @@ svg.avatar { fill: #2f3a31; background: #1d241f; }
 .admin-panel { display: grid; gap: 10px; margin-top: 16px; padding: 14px 16px; border: 1px dashed #b79cf0; border-radius: 10px; }
 .admin-panel .admin-list { margin: 0; }
 .admin-match { display: grid; gap: 2px; min-width: min(100%, 260px); }
+.admin-cards { display: grid; gap: 12px; margin-top: 12px; }
+.admin-card { display: grid; gap: 4px; padding: 14px 16px; background: rgba(22, 27, 23, 0.9); border: 1px solid #2f3a31; border-radius: 10px; }
+.admin-card .eyebrow { margin: 0; }
+.admin-card .admin-form { margin-top: 6px; }
+.admin-card .controls { margin-top: 8px; }
+.form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; }
 .badge { margin-left: 8px; padding: 1px 6px; font-size: 11px; color: #0d100e; background: #b79cf0; border-radius: 4px; }
 
 /* 3D background (app/scene.js). It fades in once WebGL is running; a soft vignette keeps text in the middle readable. */

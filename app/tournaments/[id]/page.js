@@ -1,17 +1,15 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { formatDay } from '../../../lib/themes';
-import { advanceTournaments, getTournament, isDay, roundName } from '../../../lib/tournaments';
+import { isThemeId } from '../../../lib/themes';
+import { advanceTournaments, getTournament, roundName } from '../../../lib/tournaments';
 import { getUserAndProfile } from '../../../lib/supabase/server';
 import { MatchControls, TournamentControls } from '../../admin/controls';
 import Countdown from '../../countdown';
+import LocalTime from '../../local-time';
 import Header from '../../header';
 import Matchup from './matchup';
 
-export async function generateMetadata({ params }) {
-  const { day } = await params;
-  return { title: isDay(day) ? `Tournament · ${formatDay(day)}` : 'Tournament' };
-}
+export const metadata = { title: 'Tournament' };
 
 // One side of a matchup in the bracket: thumbnail, author and votes. Winners are highlighted once decided.
 function BracketEntry({ entry, seed, votes, decided, won, round }) {
@@ -67,14 +65,14 @@ function Bracket({ tournament }) {
 }
 
 export default async function TournamentPage({ params }) {
-  const { day } = await params;
+  const { id } = await params;
   const { supabase, user, isAdmin } = await getUserAndProfile();
-  if (!isDay(day)) notFound();
+  if (!isThemeId(id)) notFound();
   await advanceTournaments(supabase);
-  const tournament = await getTournament(supabase, user, day);
+  const tournament = await getTournament(supabase, user, id);
   if (!tournament || (tournament.status === 'cancelled' && !isAdmin)) notFound();
 
-  const { champion, status, currentRound, rounds } = tournament;
+  const { champion, status, currentRound, rounds, theme } = tournament;
   // Current-round matchups with two images, which an admin can decide or reopen.
   const manageable = status === 'running' || status === 'paused'
     ? tournament.matches.filter((match) => match.round === currentRound && match.a && match.b)
@@ -82,11 +80,11 @@ export default async function TournamentPage({ params }) {
   const open = status === 'running' ? tournament.matches.filter((match) => match.round === currentRound && match.a && match.b && !match.winnerId) : [];
   return (
     <main className="feed">
-      <Header title={tournament.theme ?? 'Tournament'} />
+      <Header title={theme?.title ?? 'Tournament'} />
       <section className="theme">
-        <p className="eyebrow">Theme for {formatDay(day, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })} · {tournament.entryCount} {tournament.entryCount === 1 ? 'image' : 'images'}</p>
-        <h2>{tournament.theme ?? 'Untitled theme'}</h2>
-        {tournament.themeDescription && <p>{tournament.themeDescription}</p>}
+        <p className="eyebrow">Theme · bracket started <LocalTime value={tournament.startedAt} /> · {tournament.entryCount} {tournament.entryCount === 1 ? 'image' : 'images'}</p>
+        <h2>{theme?.title ?? 'Untitled theme'}</h2>
+        {theme?.description && <p>{theme.description}</p>}
         {status === 'running' && (
           <p className="meta">{roundName(currentRound, rounds)} · voting ends in <Countdown until={tournament.roundEndsAt} /></p>
         )}
@@ -106,7 +104,7 @@ export default async function TournamentPage({ params }) {
                     <BracketEntry entry={match.a} seed={match.seedA} votes={match.votesA} decided={Boolean(match.winnerId)} won={match.winnerId === match.a?.id} round={match.round} />
                     <BracketEntry entry={match.b} seed={match.seedB} votes={match.votesB} decided={Boolean(match.winnerId)} won={match.winnerId === match.b?.id} round={match.round} />
                   </span>
-                  <MatchControls match={match} day={day} />
+                  <MatchControls match={match} themeId={tournament.id} />
                 </li>
               ))}
             </ul>
