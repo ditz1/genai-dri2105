@@ -1,3 +1,4 @@
+import Form from 'next/form';
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import { getPosts } from '../../lib/posts';
@@ -7,13 +8,13 @@ import { getUserAndProfile } from '../../lib/supabase/server';
 import Countdown from '../countdown';
 import LocalTime from '../local-time';
 import Header from '../header';
-import { removePost } from './actions';
 import { ThemeWindowControls, TournamentControls } from './controls';
-import { NewThemeForm, SettingsForm, ThemeEditor } from './forms';
+import { NewThemeForm, PostEditor, SettingsForm, ThemeEditor } from './forms';
 
 export const metadata = { title: 'Admin' };
 // Asking Gemini for a theme can take a few seconds.
 export const maxDuration = 30;
+const postsPerPage = 24;
 
 function bracketStatus(tournament) {
   if (tournament.status === 'running') return <>{roundName(tournament.currentRound, tournament.rounds)}, ends in <Countdown until={tournament.roundEndsAt} /></>;
@@ -22,10 +23,13 @@ function bracketStatus(tournament) {
   return tournament.champion ? `won by ${tournament.champion.author}` : 'finished';
 }
 
-export default async function Admin() {
+export default async function Admin({ searchParams }) {
   const { supabase, user, isAdmin } = await getUserAndProfile();
   if (!user) redirect('/login');
   if (!isAdmin) notFound();
+  const params = await searchParams;
+  const search = String(params.q ?? '').trim().slice(0, 100);
+  const shown = Math.min(Math.max(Number.parseInt(params.posts, 10) || postsPerPage, postsPerPage), 240);
   await advanceTournaments(supabase);
 
   // Opens a theme if none is running, the same way visitors' pages do.
@@ -34,7 +38,8 @@ export default async function Admin() {
     supabase.from('themes').select(themeColumns).order('opens_at', { ascending: false }).limit(80),
     supabase.from('app_settings').select('round_hours, theme_hours').maybeSingle(),
     getTournaments(supabase, { includeCancelled: true }),
-    getPosts(supabase, user, { limit: 24 }),
+    // One extra to tell whether there are more to show.
+    getPosts(supabase, user, { search, limit: shown + 1 }),
     supabase.rpc('admin_list_members'),
   ]);
   if (membersError) console.error('Failed to list members:', membersError.message);
@@ -137,22 +142,27 @@ export default async function Admin() {
       <h2>Settings</h2>
       {settings && <SettingsForm settings={settings} />}
 
-      <h2>Recent posts</h2>
+      <h2 id="posts">Posts</h2>
+      <p className="meta">
+        A post shows its caption, or its prompt when it has none. Saving a caption leaves the image, prompt, score and votes
+        alone; clearing it shows the prompt again. Deleting removes the image too.
+      </p>
+      <Form action="/admin" scroll={false} className="controls search">
+        <input type="search" name="q" defaultValue={search} maxLength={100} placeholder="Search prompts and captions" aria-label="Search prompts and captions" />
+        <button className="secondary">Search</button>
+        {search && <Link href="/admin" scroll={false}>Clear</Link>}
+      </Form>
+      {posts.length === 0 && <p>{search ? `No posted prompts or captions contain "${search}".` : 'Nothing has been posted yet.'}</p>}
       <div className="posts">
-        {posts.map((post) => (
-          <article className="post" key={post.id}>
-            <img src={post.imageUrl} alt={post.prompt} loading="lazy" />
-            <p className="prompt">{post.prompt}</p>
-            <p className="meta">
-              <Link href={`/people/${post.userId}`}>{post.author}</Link> · {post.date}{post.theme && ` · ${post.theme}`} · score {post.score}
-            </p>
-            <form action={removePost} className="votes">
-              <input type="hidden" name="id" value={post.id} />
-              <button className="secondary">Delete</button>
-            </form>
-          </article>
-        ))}
+        {posts.slice(0, shown).map((post) => <PostEditor key={post.id} post={post} />)}
       </div>
+      {posts.length > shown && (
+        <p>
+          <Link href={`/admin?${new URLSearchParams({ ...(search && { q: search }), posts: shown + postsPerPage })}`} scroll={false}>
+            Show more posts
+          </Link>
+        </p>
+      )}
 
       <h2>Members</h2>
       <div className="table-scroll">

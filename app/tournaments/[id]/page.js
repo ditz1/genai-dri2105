@@ -119,7 +119,7 @@ export default async function TournamentPage({ params }) {
               <img src={champion.imageUrl} alt={champion.prompt} />
               <div>
                 <p className="eyebrow">Champion</p>
-                <h2>{champion.prompt}</h2>
+                <h2>{champion.description}</h2>
                 <p className="meta">by <Link href={`/people/${champion.userId}`}>{champion.author}</Link></p>
                 {tournament.entryCount === 1 && <p className="meta">The only image posted for this theme, so it won by default.</p>}
               </div>

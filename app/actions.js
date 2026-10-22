@@ -7,6 +7,7 @@ import { createClient } from '../lib/supabase/server';
 
 const maxNameLength = 80;
 const maxPromptLength = 500;
+const maxCaptionLength = 300;
 // Image generation runs on a free daily allowance shared by everyone, so each member gets a slice of it.
 const dailyGenerations = 10;
 
@@ -123,15 +124,19 @@ export async function generatePost(previousState, formData) {
   return {};
 }
 
+// Posts a draft, with the caption the owner wrote for it. Left empty, the post shows its prompt instead.
 export async function publishPost(formData) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/login');
+  const caption = String(formData.get('caption') ?? '').trim();
+  if (caption.length > maxCaptionLength) return;
   const { error } = await supabase
     .from('posts')
-    .update({ posted_at: new Date().toISOString() })
+    .update({ posted_at: new Date().toISOString(), caption: caption || null })
     .eq('id', String(formData.get('id') ?? ''))
-    .eq('user_id', user.id);
+    .eq('user_id', user.id)
+    .is('posted_at', null);
   if (error) console.error('Failed to publish post:', error.message);
   revalidatePath('/create');
   revalidatePath('/posts');

@@ -69,6 +69,9 @@ svg.avatar { fill: #2f3a31; background: #1d241f; }
 .prompt-form label { color: #8a968a; font-size: 13px; }
 .prompt-form textarea { font: inherit; color: inherit; background: #161b17; border: 1px solid #2f3a31; border-radius: 6px; padding: 8px 10px; width: 100%; resize: vertical; }
 .prompt-form button { justify-self: start; }
+.caption-form { display: grid; gap: 8px; }
+.caption-form label { display: grid; gap: 4px; color: #8a968a; font-size: 13px; }
+.caption-form textarea { font: inherit; color: inherit; background: #0d100e; border: 1px solid #2f3a31; border-radius: 6px; padding: 6px 8px; width: 100%; resize: vertical; }
 
 .eyebrow { margin: 0; color: #8a968a; font-size: 13px; }
 .theme { display: grid; gap: 6px; margin-top: 8px; padding: 16px 18px; background: #161b17; border: 1px solid #2f3a31; border-left: 3px solid #b79cf0; border-radius: 10px; }
@@ -158,6 +161,10 @@ svg.avatar { fill: #2f3a31; background: #1d241f; }
 .admin-card .eyebrow { margin: 0; }
 .admin-card .admin-form { margin-top: 6px; }
 .admin-card .controls { margin-top: 8px; }
+.post .admin-form { margin-top: 0; }
+.post .admin-form textarea { background: #0d100e; }
+.search { margin-top: 12px; }
+.search input { flex: 1 1 200px; max-width: 360px; font: inherit; color: #d8e0d6; background: #161b17; border: 1px solid #2f3a31; border-radius: 6px; padding: 6px 10px; color-scheme: dark; }
 .form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; }
 .badge { margin-left: 8px; padding: 1px 6px; font-size: 11px; color: #0d100e; background: #b79cf0; border-radius: 4px; }
 

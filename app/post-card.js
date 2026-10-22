@@ -33,7 +33,7 @@ export default function PostCard({ post, signedIn, owned }) {
   return (
     <article className="post">
       <img src={post.imageUrl} alt={post.prompt} loading="lazy" />
-      <p className="prompt">{post.prompt}</p>
+      <p className="prompt">{post.description}</p>
       <p className="meta">
         <Link href={`/people/${post.userId}`}>{post.author}</Link> · {post.date}
         {post.theme && <> · {post.theme}</>}

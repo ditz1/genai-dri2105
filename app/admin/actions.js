@@ -213,6 +213,32 @@ export async function reseedTournament(formData) {
   refresh(themeId);
 }
 
+// Every page that shows a post's image or prompt, including the brackets it may be in.
+function refreshPost(userId) {
+  refresh();
+  revalidatePath('/posts');
+  revalidatePath('/tournaments/[id]', 'page');
+  if (userId) revalidatePath(`/people/${userId}`);
+}
+
+// Rewords a post's caption; an empty one shows the prompt again. The image, prompt, score and votes stay as they are.
+export async function updatePostCaption(previousState, formData) {
+  const supabase = await requireAdmin();
+  const caption = String(formData.get('caption') ?? '').trim();
+  if (caption.length > 300) return { error: 'Captions must be 300 characters or fewer.' };
+  const { error } = await supabase.rpc('admin_update_post_caption', {
+    target_post: String(formData.get('id') ?? ''),
+    new_caption: caption,
+  });
+  if (error) {
+    console.error('Failed to update post:', error.message);
+    return { error: 'Could not save that caption.' };
+  }
+  refreshPost(String(formData.get('user') ?? ''));
+  return { message: caption ? 'Saved.' : 'Caption removed; the prompt shows instead.' };
+}
+
+// Deletes a post and its image. In a bracket its slot empties, so its opponent advances as if on a bye.
 export async function removePost(formData) {
   const supabase = await requireAdmin();
   const { data: removed, error } = await supabase
@@ -222,7 +248,6 @@ export async function removePost(formData) {
     .select('image_path, user_id');
   if (error) console.error('Failed to delete post:', error.message);
   if (removed?.length) await supabase.storage.from('generations').remove(removed.map((post) => post.image_path));
-  refresh();
-  revalidatePath('/posts');
+  refreshPost();
   removed?.forEach((post) => revalidatePath(`/people/${post.user_id}`));
 }

@@ -1,7 +1,9 @@
 'use client';
 
 import { useActionState } from 'react';
-import { createGeminiTheme, createTheme, saveSettings, updateTheme } from './actions';
+import Link from 'next/link';
+import { createGeminiTheme, createTheme, removePost, saveSettings, updatePostCaption, updateTheme } from './actions';
+import { confirmFirst } from './controls';
 
 function Status({ state }) {
   if (state.error) return <p className="error" role="alert">{state.error}</p>;
@@ -60,5 +62,34 @@ export function SettingsForm({ settings }) {
       <div className="votes"><button disabled={pending}>{pending ? 'Saving…' : 'Save settings'}</button></div>
       <Status state={state} />
     </form>
+  );
+}
+
+// One posted image: reword its caption (the image and prompt stay as they are) or delete it.
+export function PostEditor({ post }) {
+  const [state, action, pending] = useActionState(updatePostCaption, {});
+  return (
+    <article className="post">
+      <img src={post.imageUrl} alt={post.prompt} loading="lazy" />
+      <p className="meta">
+        <Link href={`/people/${post.userId}`}>{post.author}</Link> · {post.date}{post.theme && ` · ${post.theme}`} · score {post.score}
+      </p>
+      <p className="meta">Prompt: {post.prompt}</p>
+      <form className="admin-form" action={action}>
+        <input type="hidden" name="id" value={post.id} />
+        <input type="hidden" name="user" value={post.userId} />
+        <label>
+          Caption
+          <textarea name="caption" rows={2} maxLength={300} defaultValue={post.caption ?? ''} key={post.caption} placeholder="None, so the prompt shows" />
+        </label>
+        <div className="votes">
+          <button className="secondary" disabled={pending}>{pending ? 'Saving…' : 'Save caption'}</button>
+          <button formAction={removePost} formNoValidate className="secondary" onClick={confirmFirst('Delete this post and its image? Its votes go too, and this can’t be undone.')}>
+            Delete
+          </button>
+        </div>
+        <Status state={state} />
+      </form>
+    </article>
   );
 }

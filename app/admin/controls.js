@@ -15,7 +15,7 @@ import {
 } from './actions';
 
 // Asks before actions that throw away votes or end a bracket.
-function confirmFirst(message) {
+export function confirmFirst(message) {
   return (event) => {
     if (!window.confirm(message)) event.preventDefault();
   };

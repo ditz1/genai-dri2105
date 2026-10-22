@@ -44,7 +44,7 @@ export default function Matchup({ match, signedIn }) {
             <div className={`matchup-side${myVote === side ? ' picked' : ''}`} key={side}>
               {index === 1 && <span className="versus" aria-hidden="true">vs</span>}
               <img src={entry.imageUrl} alt={entry.prompt} loading="lazy" />
-              <p className="prompt">{entry.prompt}</p>
+              <p className="prompt">{entry.description}</p>
               <p className="meta"><Link href={`/people/${entry.userId}`}>{entry.author}</Link></p>
               <div className="share" aria-hidden="true"><span style={{ width: `${share}%` }} /></div>
               <div className="votes">

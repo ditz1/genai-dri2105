@@ -36,10 +36,16 @@ export default async function Create({ searchParams }) {
             <p className="prompt">{draft.prompt}</p>
             {draft.theme && <p className="meta">For {draft.theme}</p>}
             {!openIds.includes(draft.themeId) && <p className="meta">Its theme isn't taking entries any more, so posting it won't enter a bracket.</p>}
-            <form className="votes">
+            <form className="caption-form">
               <input type="hidden" name="id" value={draft.id} />
-              <button formAction={publishPost}>Post</button>
-              <button formAction={deletePost} className="secondary">Discard</button>
+              <label>
+                Caption (optional)
+                <textarea name="caption" rows={2} maxLength={300} placeholder="Shown instead of the prompt" />
+              </label>
+              <div className="votes">
+                <button formAction={publishPost}>Post</button>
+                <button formAction={deletePost} className="secondary">Discard</button>
+              </div>
             </form>
           </article>
         ))}
