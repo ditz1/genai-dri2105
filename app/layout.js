@@ -11,8 +11,8 @@ export const metadata = {
 
 // Looks up who is signed in for the account link. It sits in its own Suspense boundary so pages never wait on it.
 async function AccountNav() {
-  const { user, isAdmin } = await getUserAndProfile();
-  return <Nav signedIn={Boolean(user)} admin={isAdmin} />;
+  const { user } = await getUserAndProfile();
+  return <Nav signedIn={Boolean(user)} />;
 }
 
 // The 3D background and the navigation live here, so they stay in place while pages change underneath them.

@@ -45,14 +45,19 @@ These are read only on the server (`lib/generate.js`) and never reach the browse
 
 A theme, like "Woodlands" or "Video Game Characters", takes entries for a window of time (24 hours by default) and then becomes a tournament. Each theme is its own row in `themes`, with its own entries and its own bracket, so any number can run at once and changing one never touches another.
 
-When no theme is open, the server asks Gemini for one (`lib/gemini.js`, model `gemini-3.8-flash` unless `GEMINI_MODEL` says otherwise), avoiding the last 30 themes, and opens it with the default window. If Gemini isn't configured or fails, a theme is picked from a built-in list. Opening it needs the project's secret key because visitors can't write themes. Add both to `.env.local` (and to Vercel):
+When no theme is open, the server asks Cloudflare Workers AI for one (`lib/theme-generator.js`), avoiding the last 30 themes, and opens it with the default window. The active model is selected in `/admin` and defaults to `@cf/meta/llama-3.3-70b-instruct-fp8-fast`. It reuses the image generator's Cloudflare credentials. If AI isn't configured or fails, a theme is picked from a built-in list. Opening it needs the project's Supabase secret key because visitors can't write themes. Add these to `.env.local` (and to Vercel):
 
 ```sh
-GEMINI_API_KEY=...            # https://aistudio.google.com/apikey
+CLOUDFLARE_ACCOUNT_ID=...     # Same account and token as image generation
+CLOUDFLARE_API_TOKEN=...      # Needs Workers AI Read permission
 SUPABASE_SECRET_KEY=sb_secret_...   # Project Settings → API Keys → Secret keys
 ```
 
-Both are read only on the server. Without the secret key no theme opens automatically, but an admin can still open one.
+These are read only on the server. Without the Supabase secret key no theme opens automatically, but an admin can still open one. [Cloudflare Workers AI includes 10,000 neurons per day at no charge](https://developers.cloudflare.com/workers-ai/platform/pricing/), shared by image and theme generation.
+
+Run `npm run check:themes` to request a theme directly, without opening one or writing to the database. It loads the same environment files as Next.js and reports missing configuration, API errors (including HTTP status and model), or invalid responses. This standalone connectivity check uses the default model, optionally overridden by `CLOUDFLARE_THEME_MODEL`. Application requests use the saved admin model selection.
+
+The admin's **Open a theme with AI** action reports failures and leaves the form available to retry. Automatic theme creation still uses the built-in list if AI fails, so entries can remain open. Ensure the Cloudflare credentials are set in both `.env.local` and the relevant Vercel environments, then restart the local server and redeploy after changing them. Check the server logs for failures during automatic theme creation. Run `npm test` for the theme response regression tests.
 
 Each image is tagged with the open theme it was generated for (`posts.theme_id`); when more than one theme is open, `/create` asks which. Row level security only accepts a theme that is open at that moment. When a theme's entries close, its posted images are seeded into a bracket, ordered by their up/down score, with byes for the top seeds when the count isn't a power of two. Members pick one side of each matchup at `/tournaments/<theme id>`; a round lasts 24 hours by default, the side with more votes advances, ties go to the higher seed, and the last image left is the champion. `/tournaments` lists open themes, live brackets and past champions.
 
@@ -60,14 +65,37 @@ The database runs the clock: `public.advance_tournaments()` starts brackets for 
 
 ## Admin panel
 
-`/admin` is for members listed in the `admins` table, which starts with danielitzler@gmail.com. Everyone else gets a 404, and the database checks `public.is_admin()` for every admin action, so the panel can't be used by calling the API directly. Admins can:
+`/admin` is reached by typing the URL; there is no admin link in the site's main navigation. It is for members listed in the `admins` table, which starts with danielitzler@gmail.com. Signed-out visitors are sent to login and other members get a 404. Server actions and database policies both enforce admin access. Admins can:
 
-- open a new theme at any time, written by hand or suggested by Gemini, now or in a given number of hours, taking entries for as long as they choose; it runs alongside any others
+- open a new theme at any time, written by hand or suggested by AI, now or in a given number of hours, taking entries for as long as they choose; it runs alongside any others
 - reword any one theme, change how long it keeps taking entries, close its entries now to start its bracket, or remove one that hasn't opened yet
 - end a bracket's current round now, pause and resume it, set how long the round has left, finish it at once, cancel it, or re-seed it from scratch
 - decide a single matchup by hand or reopen it, from the admin controls on the bracket page
 - change how long new themes take entries and how long rounds last
-- delete any post, and see every member with their email and post count
+- inspect every member's profile, email and post count, with no-email demo accounts identified
+- view and search all media and original prompts, including drafts, upload images, edit captions and delete images
+- inspect image/theme generation requests, response metadata, errors, timing, models and prompt instructions; historical posts retain their original prompt/model, and detailed request history starts with this update
+- create, read, update and delete providers, models and generation examples, optionally linked to a media post
+- select the image/theme models used by new requests, and edit an image prompt prefix and extra theme instructions
+- create, read, update and delete allowed signup domains and whitelisted emails, and optionally restrict new registrations; restrictions are off by default and existing accounts retain access
+- create demo tournaments using only no-email accounts, retry missing submissions, then cast fake-user votes and end each round immediately
+
+The assignment's prompt chains and chain steps are represented by the app's actual image/theme prompts and saved generation configuration. This application does not have a multi-step chain engine or terms-and-conditions acceptance flow.
+
+Providers are a catalogue with a supported Cloudflare connection or a catalogue-only entry. No API keys are stored in these records. Image models can return a base64 image (FLUX) or an image file (SDXL); theme models must support JSON Mode. A selected model cannot be deleted or disabled until another model is selected, and a provider with models cannot be deleted. Model IDs and provider names are snapshotted in request history.
+
+Apply `20261029000000_admin_observability.sql` and `20261029010000_terminal_simulations.sql` before deploying the updated application. They add private generation history, configuration tables, signup checks, media policies and isolated simulation controls. `supabase/tests/admin_observability.sql` exercises admin CRUD, access restrictions and signup enforcement in a transaction that rolls back all test changes. `npm test` covers request/response handling, model selection and admin input validation.
+
+For repeatable demos, `supabase/seed-demo-users.sql` creates eight named test users without emails, passwords or sign-in identities. It only updates accounts carrying its own demo marker. Run it while new-signup restrictions are off. The terminal simulator uses `SUPABASE_SECRET_KEY` (or the legacy `SUPABASE_SERVICE_ROLE_KEY`) from `.env.local`:
+
+```sh
+npm run simulate:tournaments -- create --title "Cosmic Gardens" --entries 8
+npm run simulate:tournaments -- status --run <run-id>
+npm run simulate:tournaments -- fill --run <run-id>  # retry only missing submissions
+npm run simulate:tournaments -- round --run <run-id> # votes, then ends one round now
+```
+
+`create` generates and uploads one artwork per participant, saves the prompts and response metadata, and starts the bracket only after every submission is saved. `round` only operates on the selected demo run, uses its no-email participants, and advances one round without waiting for the clock. Normal users and other tournaments are excluded. Demo artwork and tournament history remain available after a champion is selected.
 
 To add another admin, insert their user id in the SQL editor: `insert into public.admins (user_id) select id from auth.users where email = '...';`
 

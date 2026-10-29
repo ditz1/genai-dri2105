@@ -11,7 +11,6 @@ const sections = [
   { href: '/tournaments', label: 'Tournaments' },
   { href: '/create', label: 'Create' },
 ];
-const adminLink = { href: '/admin', label: 'Admin' };
 const profileLink = { href: '/profile', label: 'Profile', matches: (path) => path === '/profile' || path === '/onboarding' };
 const loginLink = { href: '/login', label: 'Log in' };
 
@@ -25,9 +24,9 @@ function Pending() {
 
 // The floating bar at the top of every page. The highlight glides to the current section, and pages slide in the
 // direction of the link that was clicked. `signedIn` is undefined while the account is still being looked up.
-export default function Nav({ signedIn, admin = false }) {
+export default function Nav({ signedIn }) {
   const pathname = usePathname();
-  const items = [...sections, ...(admin ? [adminLink] : [])];
+  const items = sections;
   const account = signedIn === undefined ? null : signedIn ? profileLink : loginLink;
   const all = account ? [...items, account] : items;
   const activeIndex = all.findIndex((item) => isActive(item, pathname));
@@ -52,7 +51,7 @@ export default function Nav({ signedIn, admin = false }) {
     markEdges();
     window.addEventListener('resize', markEdges);
     return () => window.removeEventListener('resize', markEdges);
-  }, [pathname, admin]);
+  }, [pathname]);
 
   function link(item, index, className = 'nav-link') {
     const active = index === activeIndex;

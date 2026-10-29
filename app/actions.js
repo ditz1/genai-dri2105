@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
-import { generateImage, imageModel } from '../lib/generate';
+import { generateImage } from '../lib/generate';
 import { createClient } from '../lib/supabase/server';
 
 const maxNameLength = 80;
@@ -101,7 +101,7 @@ export async function generatePost(previousState, formData) {
 
   let image;
   try {
-    image = await generateImage(prompt);
+    image = await generateImage(prompt, { supabase, userId: user.id, themeId });
   } catch (error) {
     console.error('Failed to generate image:', error.message);
     return { error: 'Could not generate that image. Try again.', prompt, themeId };
@@ -114,12 +114,13 @@ export async function generatePost(previousState, formData) {
     console.error('Failed to store generated image:', uploadError.message);
     return { error: 'Could not save that image. Try again.', prompt, themeId };
   }
-  const { error } = await supabase.from('posts').insert({ prompt, model: imageModel, image_path: path, theme_id: themeId });
+  const { data: post, error } = await supabase.from('posts').insert({ prompt, model: image.model, image_path: path, theme_id: themeId }).select('id').single();
   if (error) {
     console.error('Failed to save post:', error.message);
     await generations.remove([path]);
     return { error: 'Could not save that image. Try again.', prompt, themeId };
   }
+  if (image.requestId) await supabase.from('generation_requests').update({ post_id: post.id }).eq('id', image.requestId);
   revalidatePath('/create');
   return {};
 }

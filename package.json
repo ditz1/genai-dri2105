@@ -5,6 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "next dev --hostname 127.0.0.1",
+    "check:themes": "node scripts/check-themes.mjs",
+    "simulate:tournaments": "node scripts/simulate-tournaments.mjs",
+    "test": "node --test",
     "build": "next build",
     "start": "next start --hostname 127.0.0.1"
   },

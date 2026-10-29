@@ -74,12 +74,15 @@ export async function createTheme(previousState, formData) {
   return openTheme(supabase, formData, { ...wording, model: null });
 }
 
-export async function createGeminiTheme(previousState, formData) {
+export async function createAiTheme(previousState, formData) {
   const supabase = await requireAdmin();
-  const picked = await pickTheme(supabase);
-  const result = await openTheme(supabase, formData, picked);
-  if (result.error || picked.model) return result;
-  return { message: `Gemini didn't answer, so ${result.message} (picked from the built-in list)` };
+  let picked;
+  try {
+    picked = await pickTheme(supabase, { allowFallback: false });
+  } catch (error) {
+    return { error: `Could not generate a theme. ${error.message}` };
+  }
+  return openTheme(supabase, formData, picked);
 }
 
 // Rewords one theme. Other themes, and the brackets that belong to them, are untouched.

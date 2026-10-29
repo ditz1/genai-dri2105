@@ -2,7 +2,7 @@
 
 import { useActionState } from 'react';
 import Link from 'next/link';
-import { createGeminiTheme, createTheme, removePost, saveSettings, updatePostCaption, updateTheme } from './actions';
+import { createAiTheme, createTheme, removePost, saveSettings, updatePostCaption, updateTheme } from './actions';
 import { confirmFirst } from './controls';
 
 function Status({ state }) {
@@ -11,10 +11,10 @@ function Status({ state }) {
   return null;
 }
 
-// Opens a new theme next to any that are already running: written here, or suggested by Gemini.
+// Opens a new theme next to any that are already running: written here, or suggested by AI.
 export function NewThemeForm({ themeHours }) {
   const [createState, create, creating] = useActionState(createTheme, {});
-  const [geminiState, createFromGemini, asking] = useActionState(createGeminiTheme, {});
+  const [aiState, createFromAi, asking] = useActionState(createAiTheme, {});
   const busy = creating || asking;
   return (
     <form className="admin-form" action={create}>
@@ -26,12 +26,12 @@ export function NewThemeForm({ themeHours }) {
       </div>
       <div className="votes">
         <button disabled={busy}>{creating ? 'Opening…' : 'Open this theme'}</button>
-        <button formAction={createFromGemini} formNoValidate className="secondary" disabled={busy}>
-          {asking ? 'Asking Gemini…' : 'Open a theme from Gemini'}
+        <button formAction={createFromAi} formNoValidate className="secondary" disabled={busy}>
+          {asking ? 'Asking AI…' : 'Open a theme with AI'}
         </button>
       </div>
       <Status state={createState} />
-      <Status state={geminiState} />
+      <Status state={aiState} />
     </form>
   );
 }
@@ -75,6 +75,7 @@ export function PostEditor({ post }) {
         <Link href={`/people/${post.userId}`}>{post.author}</Link> · {post.date}{post.theme && ` · ${post.theme}`} · score {post.score}
       </p>
       <p className="meta">Prompt: {post.prompt}</p>
+      <p className="meta">{post.postedAt ? 'Published' : 'Draft'} · {post.model} · Post ID: <code>{post.id}</code></p>
       <form className="admin-form" action={action}>
         <input type="hidden" name="id" value={post.id} />
         <input type="hidden" name="user" value={post.userId} />

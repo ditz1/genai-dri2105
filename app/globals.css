@@ -136,7 +136,7 @@ svg.avatar { fill: #2f3a31; background: #1d241f; }
 .admin-form { display: grid; gap: 10px; max-width: 560px; margin-top: 12px; }
 .admin-form label { display: grid; gap: 4px; color: #8a968a; font-size: 13px; }
 .admin-form p { margin: 0; }
-.admin-form input, .admin-form textarea { font: inherit; color: #d8e0d6; background: #161b17; border: 1px solid #2f3a31; border-radius: 6px; padding: 8px 10px; width: 100%; resize: vertical; color-scheme: dark; }
+.admin-form input, .admin-form textarea, .admin select { font: inherit; color: #d8e0d6; background: #161b17; border: 1px solid #2f3a31; border-radius: 6px; padding: 8px 10px; width: 100%; resize: vertical; color-scheme: dark; }
 .admin-list { list-style: none; margin: 12px 0 0; padding: 0; display: grid; gap: 8px; }
 .admin-list li, .admin-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; padding: 10px 12px; background: #161b17; border: 1px solid #2f3a31; border-radius: 8px; overflow-wrap: anywhere; }
 .admin-row { margin-top: 12px; }
@@ -207,6 +207,17 @@ svg.avatar { fill: #2f3a31; background: #1d241f; }
 .feed button:active:not(:disabled), .card button:active:not(:disabled) { transform: translateY(0) scale(0.97); }
 
 /* Panels sit on the 3D scene, so they are near-opaque, and lift slightly under the pointer. */
+.admin-jump-links { display: flex; flex-wrap: wrap; gap: 8px 18px; padding: 16px 0; border-block: 1px solid #2f3a31; }
+.admin-section { margin-block: 32px; scroll-margin-top: 90px; }
+.admin [id] { scroll-margin-top: 90px; }
+.admin-card { margin-block: 12px; padding: 18px; border: 1px solid #2f3a31; border-radius: 12px; background: rgba(22, 27, 23, 0.94); min-width: 0; }
+.admin-card summary { cursor: pointer; font-weight: 600; padding-block: 4px; }
+.admin pre { overflow: auto; max-height: 340px; padding: 14px; border-radius: 8px; background: #101512; font-size: 12px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.admin code { overflow-wrap: anywhere; font-size: 0.85em; }
+.admin-prompt { white-space: pre-wrap; overflow-wrap: anywhere; }
+.admin input[type="checkbox"] { width: auto; display: inline-block; }
+.admin .controls { flex-wrap: wrap; align-items: end; }
+.admin .controls label { display: grid; gap: 6px; }
 .post, .tournament-card, .matchup, .theme, .stats div, .admin-list li, .admin-row, .bracket-match, .champion { background-color: rgba(22, 27, 23, 0.9); }
 .post, .tournament-card, .matchup { transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease; }
 .post:hover, .tournament-card:hover, .matchup:hover { transform: translateY(-3px); border-color: color-mix(in srgb, var(--route-accent) 45%, #2f3a31); box-shadow: 0 14px 30px rgba(0, 0, 0, 0.35); }

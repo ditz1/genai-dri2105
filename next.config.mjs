@@ -1,1 +1,1 @@
-export default { devIndicators: false };
+export default { devIndicators: false, experimental: { serverActions: { bodySizeLimit: '12mb' } } };
