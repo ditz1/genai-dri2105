@@ -8,6 +8,7 @@ import Countdown from '../../countdown';
 import LocalTime from '../../local-time';
 import Header from '../../header';
 import Matchup from './matchup';
+import { createSheet } from '../../studio/actions';
 
 export const metadata = { title: 'Tournament' };
 
@@ -122,6 +123,15 @@ export default async function TournamentPage({ params }) {
                 <h2>{champion.description}</h2>
                 <p className="meta">by <Link href={`/people/${champion.userId}`}>{champion.author}</Link></p>
                 {tournament.entryCount === 1 && <p className="meta">The only image posted for this theme, so it won by default.</p>}
+                {user ? (
+                  <form className="champion-next" action={createSheet}>
+                    <input type="hidden" name="theme_id" value={tournament.id} />
+                    <button>Build a design sheet from this winner</button>
+                    <p className="meta">The studio grows the image into a world: a character, a place, a landmark, a creature and an item in its style.</p>
+                  </form>
+                ) : (
+                  <p className="meta"><Link href="/login">Log in</Link> to build a design sheet from this winner.</p>
+                )}
               </div>
             </>
           ) : (

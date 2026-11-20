@@ -35,7 +35,7 @@ export default async function Admin({ searchParams }) {
   const search = String(params.q ?? '').trim().slice(0, 100);
   const shown = Math.min(Math.max(Number.parseInt(params.posts, 10) || postsPerPage, postsPerPage), 240);
   const historyShown = Math.min(Math.max(Number.parseInt(params.history, 10) || 25, 25), 200);
-  const kind = ['image', 'theme'].includes(params.kind) ? params.kind : '';
+  const kind = ['image', 'theme', 'text'].includes(params.kind) ? params.kind : '';
   const status = ['pending', 'succeeded', 'failed'].includes(params.status) ? params.status : '';
   let historyQuery = supabase.from('generation_requests').select('*,user:profiles!generation_requests_user_id_fkey(first_name,last_name),responses:llm_responses(output)')
     .order('created_at', { ascending: false }).limit(historyShown + 1);
@@ -91,7 +91,7 @@ export default async function Admin({ searchParams }) {
 
       <section id="generation" className="admin-section">
         <h2>Generation settings</h2>
-        <p className="meta">New requests use the selected image and theme models. Instructions let you adjust prompt composition without introducing prompt chains.</p>
+        <p className="meta">New requests use the selected image and theme models. Instructions adjust how those prompts are composed. Design sheets in the Studio run their own prompt chains and pick their image model per sheet; their requests appear in the history below.</p>
         {settings?.image_model_id && <GenerationSettingsForm settings={settings} models={models ?? []} providers={providers ?? []} />}
       </section>
       <GenerationHistory requests={requests ?? []} kind={kind} status={status} shown={historyShown}

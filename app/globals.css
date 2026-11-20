@@ -100,6 +100,9 @@ svg.avatar { fill: #2f3a31; background: #1d241f; }
 .champion { display: grid; grid-template-columns: minmax(0, 320px) minmax(0, 1fr); gap: 20px; align-items: center; margin-top: 20px; padding: 14px; background: #161b17; border: 1px solid #b79cf0; border-radius: 10px; }
 .champion img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 6px; }
 .champion p { margin: 0; }
+.champion-next { display: grid; gap: 6px; justify-items: start; margin-top: 12px; }
+.post .empty-image { width: 100%; aspect-ratio: 1; border-radius: 6px; background: #1d241f; }
+.post .eyebrow a, .post .prompt a { color: inherit; }
 .feed .champion h2 { margin: 4px 0; font-size: 18px; color: #d8e0d6; overflow-wrap: anywhere; }
 @media (max-width: 640px) { .champion { grid-template-columns: 1fr; } }
 

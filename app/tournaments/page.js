@@ -60,6 +60,7 @@ export default async function Tournaments() {
 
       <h2>Past tournaments</h2>
       {finished.length === 0 && <p>No tournament has finished yet. Each one's champion shows up here.</p>}
+      {finished.length > 0 && <p className="meta">Any champion can be grown into a full design sheet in the <Link href="/studio">Studio</Link>.</p>}
       <div className="tournaments">
         {finished.map((tournament) => <TournamentCard key={tournament.id} tournament={tournament} />)}
       </div>

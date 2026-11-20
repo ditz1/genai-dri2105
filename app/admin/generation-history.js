@@ -7,19 +7,25 @@ function responseOutput(request) {
   return response?.output ?? null;
 }
 
+// Requests made by a design sheet's prompt chain carry the step that made them.
+function requestLabel(request) {
+  if (request.input?.source === 'studio') return `Design sheet ${request.kind === 'image' ? 'render' : 'text step'}${request.input.step ? ` · ${request.input.step}` : ''}`;
+  return `${request.kind === 'image' ? 'Image' : 'Theme'} generation`;
+}
+
 export default function GenerationHistory({ requests, kind, status, shown, query }) {
   return <section className="admin-section" id="history">
     <h2>Generation requests &amp; LLM responses</h2>
-    <p className="meta">Image and theme requests show the original prompt, effective instructions, model, duration, outcome and response. Image responses store metadata rather than image bytes. Earlier generations appear in Media; detailed history begins with this update.</p>
+    <p className="meta">Image, theme and design-sheet requests show the original prompt, effective instructions, model, duration, outcome and response. Image responses store metadata rather than image bytes. Earlier generations appear in Media; detailed history begins with this update.</p>
     <Form action="/admin" scroll={false} className="controls">
-      <label>Type<select name="kind" defaultValue={kind}><option value="">All types</option><option value="image">Images</option><option value="theme">Themes</option></select></label>
+      <label>Type<select name="kind" defaultValue={kind}><option value="">All types</option><option value="image">Images</option><option value="theme">Themes</option><option value="text">Design sheet text steps</option></select></label>
       <label>Status<select name="status" defaultValue={status}><option value="">All statuses</option><option value="pending">Pending</option><option value="succeeded">Succeeded</option><option value="failed">Failed</option></select></label>
       <button className="secondary">Filter history</button>
     </Form>
     {!requests.length && <p>No generation requests match these filters.</p>}
     <div className="admin-cards">
       {requests.slice(0, shown).map((request) => <article className="admin-card" key={request.id}>
-        <p><strong>{request.kind === 'image' ? 'Image' : 'Theme'} generation</strong> <span className={`badge ${request.status === 'failed' ? 'error' : ''}`}>{request.status}</span></p>
+        <p><strong>{requestLabel(request)}</strong> <span className={`badge ${request.status === 'failed' ? 'error' : ''}`}>{request.status}</span></p>
         <p className="meta"><LocalTime value={request.created_at} /> · {request.provider} · <code>{request.model}</code> · {request.duration_ms == null ? 'In progress' : `${(request.duration_ms / 1000).toFixed(1)}s`}</p>
         <p className="meta">By {request.user ? `${request.user.first_name ?? ''} ${request.user.last_name ?? ''}`.trim() || 'Unnamed member' : 'Automatic theme creation'} · ID: <code>{request.id}</code></p>
         <p className="admin-prompt">{request.prompt}</p>

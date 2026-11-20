@@ -1,6 +1,6 @@
 # People — a profile board
 
-A Next.js App Router app backed by Supabase. The home page shows member profiles as 3D cards, three at a time, each with the member's name and photo. Members sign in with Google, manage their own name and photo, generate images with AI for open themes, post them, vote on each other's posts, and vote in bracket tournaments between each theme's images.
+A Next.js App Router app backed by Supabase. The home page shows member profiles as 3D cards, three at a time, each with the member's name and photo. Members sign in with Google, manage their own name and photo, generate images with AI for open themes, post them, vote on each other's posts, vote in bracket tournaments between each theme's images, and grow any tournament's winning image into a full design sheet with an editable prompt chain.
 
 ## Run locally
 
@@ -63,6 +63,50 @@ Each image is tagged with the open theme it was generated for (`posts.theme_id`)
 
 The database runs the clock: `public.advance_tournaments()` starts brackets for themes whose entries have closed and closes finished rounds, pg_cron calls it every minute, and pages call it before showing brackets. Matchup votes live in `match_votes` (one per member per matchup, readable only by their owner), and row level security only accepts them while the matchup's round is open. Images made before themes existed have no theme and never enter a bracket.
 
+## Design sheets
+
+`/studio` (signed in only) turns a tournament's winning image into a set of concept art that belongs with it. Pick any champion, there or with **Build a design sheet from this winner** on a finished bracket's page, and a sheet is created from it:
+
+- **Its colors.** The palette is read from the winning image's own pixels in the browser (`lib/studio/palette.js`) and each color gets a plain name such as "Deep Teal", because image models follow color words far better than hex codes.
+- **Its style.** The chain's first step shows the image to a vision model, which describes its look in a line of descriptors.
+- **Its world.** The theme and the prompt that made the image are available to every step as `{{theme}}`, `{{themeDescription}}` and `{{winner}}`, and the second step imagines the larger world the image is one moment of.
+- **A starter set of portions**: a hero, a home region, a landmark, a rival and a signature item. Their descriptions name a role and leave the specifics to the chain.
+
+A sheet has three views:
+
+- **Art direction.** The title, an optional direction of your own, the palette (the winner's, a preset, or your own colors), extra styles, the image model, aspect ratio and seed, and the portions. A sheet holds up to 12.
+- **Prompt chain.** An ordered list of steps. Each fills a template with `{{variables}}` and sends it to a model. A text step's output becomes a variable for later steps, an image step renders its template, and a step runs once for the sheet or once per portion. The default chain for a winner is *Read the winner → World → Art direction* (once each), then *Design pass → Image prompt → Render* for every portion. Everything is editable: templates, system prompts, names, variable names (renaming one updates later templates), order, scope, whether a text step sees the winning image, and every intermediate output. Each output remembers the exact input that produced it, so changing a template, a setting or an upstream output marks everything downstream *Out of date*. **Run chain** runs only what is new or out of date; **Re-run all** forces everything.
+- **Design sheet.** The winner next to the world and look the chain settled on, and a card per portion with **Regenerate** (that portion through the whole chain again), **Variation** (same prompt, new seed) and **Update** (when it is out of date). Click a render for its design text, prompt and seed, and to download it.
+
+A sheet can also start blank, with a brief, palette and styles you choose yourself.
+
+**Style anchor** (experimental, FLUX.2 only) passes an image to the renders as a reference: the winning image, or one portion's render. FLUX.2 tends to redraw its reference, so this suits variations of one design; for a set of different subjects it is off by default, and the style read from the winner, the palette and a shared seed keep the set together.
+
+Sheets are saved to the member's account a moment after every change (`design_sheets`, one row per sheet, private to its owner), and renders are stored in the `generations` bucket under `<user id>/studio/<sheet id>/`. Deleting a sheet deletes its renders. The winner a sheet started from is recorded when it is created and can't be changed afterwards; the database only accepts the champion of a finished tournament. Each member can keep 30 sheets, and in any 24 hours can run 30 renders and 120 text steps, since generation shares the site's free daily allowance (`LIMITS` in `lib/studio/sheet.js`).
+
+| Use | Model | Notes |
+| --- | --- | --- |
+| Text steps | `@cf/meta/llama-3.3-70b-instruct-fp8-fast` | Override with `CLOUDFLARE_TEXT_MODEL` |
+| Steps that see the winner | `@cf/mistralai/mistral-small-3.1-24b-instruct` | Override with `CLOUDFLARE_VISION_MODEL` |
+| Renders (default) | `@cf/black-forest-labs/flux-2-klein-4b` | Seeds, sizes, reference images |
+| Renders | `@cf/black-forest-labs/flux-2-klein-9b` | Higher quality, more neurons |
+| Renders | `@cf/black-forest-labs/flux-1-schnell` | The tournament model; square, no seed |
+
+The image model is chosen per sheet from this list (`lib/studio/models.js`) rather than from the admin's model catalogue, which holds the models for posts and themes. Every step is still recorded in the admin's generation history, with the step's name, the sheet it belongs to and the full prompt.
+
+Run `npm run check:studio` to run the winner chain for one portion straight against Workers AI, without signing in and without saving anything: no sheet, no history, no files in storage. It prints each step's result and writes the render to a temporary folder. `--theme <id>` picks the tournament, `--portions <n>` renders more of the starter set, `--out <folder>` chooses where the images go, and `--palette "#254333,#a9b36d"` sets the colors, since reading them from the image happens in the browser.
+
+```
+app/studio/                       the list of sheets and the editor (studio.js runs the chain and saves)
+app/api/studio/text|image/        one text step or one render, for a sheet the caller owns
+app/api/studio/sheets/[id]/       saves a sheet after checking it (lib/studio/sheet.js)
+lib/studio/chain.js               chain engine: variables, templates, staleness, run plan, default chains
+lib/studio/cloudflare.js          Workers AI calls, daily allowance, generation history
+lib/studio/palette.js             palette from pixels, color naming
+```
+
+Apply `20261120000000_design_sheets.sql` before deploying. It adds the `design_sheets` table with its access rules and lets the generation history record the chain's text steps. `supabase/tests/design_sheets.sql` exercises those rules in a transaction that rolls back.
+
 ## Admin panel
 
 `/admin` is reached by typing the URL; there is no admin link in the site's main navigation. It is for members listed in the `admins` table, which starts with danielitzler@gmail.com. Signed-out visitors are sent to login and other members get a 404. Server actions and database policies both enforce admin access. Admins can:
@@ -74,13 +118,13 @@ The database runs the clock: `public.advance_tournaments()` starts brackets for 
 - change how long new themes take entries and how long rounds last
 - inspect every member's profile, email and post count, with no-email demo accounts identified
 - view and search all media and original prompts, including drafts, upload images, edit captions and delete images
-- inspect image/theme generation requests, response metadata, errors, timing, models and prompt instructions; historical posts retain their original prompt/model, and detailed request history starts with this update
+- inspect image, theme and design-sheet generation requests, response metadata, errors, timing, models and prompt instructions; historical posts retain their original prompt/model, and detailed request history starts with this update
 - create, read, update and delete providers, models and generation examples, optionally linked to a media post
 - select the image/theme models used by new requests, and edit an image prompt prefix and extra theme instructions
 - create, read, update and delete allowed signup domains and whitelisted emails, and optionally restrict new registrations; restrictions are off by default and existing accounts retain access
 - create demo tournaments using only no-email accounts, retry missing submissions, then cast fake-user votes and end each round immediately
 
-The assignment's prompt chains and chain steps are represented by the app's actual image/theme prompts and saved generation configuration. This application does not have a multi-step chain engine or terms-and-conditions acceptance flow.
+Prompt chains and their steps live in the Studio (see Design sheets): each sheet carries its own editable chain, and every step it runs appears in the request history, filterable as design sheet text steps. Posts and themes use single prompts with the saved generation configuration. This application does not have a terms-and-conditions acceptance flow.
 
 Providers are a catalogue with a supported Cloudflare connection or a catalogue-only entry. No API keys are stored in these records. Image models can return a base64 image (FLUX) or an image file (SDXL); theme models must support JSON Mode. A selected model cannot be deleted or disabled until another model is selected, and a provider with models cannot be deleted. Model IDs and provider names are snapshotted in request history.
 

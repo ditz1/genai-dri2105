@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "next dev --hostname 127.0.0.1",
     "check:themes": "node scripts/check-themes.mjs",
+    "check:studio": "node scripts/check-studio.mjs",
     "simulate:tournaments": "node scripts/simulate-tournaments.mjs",
     "test": "node --test",
     "build": "next build",

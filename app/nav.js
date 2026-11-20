@@ -10,6 +10,7 @@ const sections = [
   { href: '/posts', label: 'Posts' },
   { href: '/tournaments', label: 'Tournaments' },
   { href: '/create', label: 'Create' },
+  { href: '/studio', label: 'Studio' },
 ];
 const profileLink = { href: '/profile', label: 'Profile', matches: (path) => path === '/profile' || path === '/onboarding' };
 const loginLink = { href: '/login', label: 'Log in' };
